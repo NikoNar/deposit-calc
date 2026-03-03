@@ -4,7 +4,6 @@ import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, Legend, Re
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const GUARANTEE_LIMIT = 16000000;
-const CURRENCY_RATES  = { AMD: 1, USD: 395, EUR: 430 };
 const CURRENCY_SYMBOLS = { AMD: "֏", USD: "$", EUR: "€" };
 const EARLY_PENALTIES  = { AMD: 2.0, USD: 1.5, EUR: 1.5 };
 const TABS = ["Calculator", "Goal Planner", "Compare", "Charts"];
