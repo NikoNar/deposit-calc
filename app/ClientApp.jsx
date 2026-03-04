@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import * as XLSX from "xlsx";
 
@@ -65,6 +66,7 @@ const TRANSLATIONS = {
     btn_monthly_excel: "Monthly Excel",
     btn_light_mode: "Light mode",
     btn_dark_mode: "Dark mode",
+    btn_system_mode: "System",
     aria_open_menu: "Open menu",
     tab_calculator: "Calculator",
     tab_goal_planner: "Goal Planner",
@@ -188,13 +190,14 @@ const TRANSLATIONS = {
     scenario_b: "Scenario B",
   },
   hy: {
-    header_title: "Տոկոսով խնայողությունների հաշվիչ",
-    header_subtitle: "Հայաստանի բանկային շուկա · 2026 փետրվար",
+    header_title: "Խնայողությունների հաշվիչ",
+    header_subtitle: "Հայաստանի բանկային շուկա · 2026",
     btn_print: "Տպել",
     btn_yearly_excel: "Տարեկան Excel",
     btn_monthly_excel: "Ամսական Excel",
     btn_light_mode: "Բաց ռեժիմ",
     btn_dark_mode: "Մութ ռեժիմ",
+    btn_system_mode: "Համակարգ",
     aria_open_menu: "Բացել մենյու",
     tab_calculator: "Հաշվիչ",
     tab_goal_planner: "Նպատակի պլանավորիչ",
@@ -523,13 +526,15 @@ function calcGoalPrincipal({ target, rate, monthlyAdd, addMonths, years, taxRate
   return Math.ceil(hi);
 }
 
-// ── Formatters ────────────────────────────────────────────────────────────────
+// ── Formatters (deterministic to avoid SSR/client hydration mismatch) ───────────
+const formatInteger = (n) => Math.abs(Math.round(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 const fmt = (n, sym = "֏") => {
-  const abs = Math.round(Math.abs(n)), sign = n < 0 ? "−" : "";
-  if (sym === "֏") return sign + new Intl.NumberFormat("hy-AM", { maximumFractionDigits: 0 }).format(abs) + " ֏";
-  if (sym === "$")  return sign + "$" + new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(abs);
-  if (sym === "€")  return sign + "€" + new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 }).format(abs);
-  return sign + abs.toLocaleString();
+  const sign = n < 0 ? "−" : "";
+  const raw = formatInteger(n);
+  if (sym === "֏") return sign + raw + " ֏";
+  if (sym === "$") return sign + "$" + raw;
+  if (sym === "€") return sign + raw + " €";
+  return sign + raw;
 };
 const fmtShort = n => {
   if (Math.abs(n) >= 1000000) return (n / 1000000).toFixed(1) + "M";
@@ -571,11 +576,45 @@ async function downloadExcel(type, result, rate, years, principal, monthlyAdd, a
 // ══════════════════════════════════════════════════════════════════════════════
 // APP
 // ══════════════════════════════════════════════════════════════════════════════
+const THEME_STORAGE_KEY = "deposit-calc-theme";
+
 export default function ClientApp() {
-  const [dark, setDark]                   = useState(true);
+  const pathname = usePathname();
+  const router = useRouter();
+  const lang = pathname === "/en" ? "en" : "hy";
+
+  const [themeMode, setThemeMode] = useState("system");
+  const [systemDark, setSystemDark] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const mobileMenuRef                     = useRef(null);
+  const mobileMenuRef = useRef(null);
+
+  const dark = themeMode === "system" ? systemDark : themeMode === "dark";
   const T = dark ? DARK : LIGHT;
+
+  useEffect(() => {
+    const stored = typeof window !== "undefined" ? localStorage.getItem(THEME_STORAGE_KEY) : null;
+    if (stored === "light" || stored === "dark" || stored === "system") setThemeMode(stored);
+  }, []);
+  useEffect(() => {
+    document.documentElement.lang = lang === "en" ? "en" : "hy";
+  }, [lang]);
+  useEffect(() => {
+    if (themeMode !== "system") return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    setSystemDark(mq.matches);
+    const fn = (e) => setSystemDark(e.matches);
+    mq.addEventListener("change", fn);
+    return () => mq.removeEventListener("change", fn);
+  }, [themeMode]);
+  const setTheme = (mode) => {
+    setThemeMode(mode);
+    if (typeof window !== "undefined") localStorage.setItem(THEME_STORAGE_KEY, mode);
+  };
+
+  const goToLang = (newLang) => {
+    if (newLang === "en") router.push("/en");
+    else router.push("/");
+  };
 
   // Close mobile menu on outside click or Escape
   useEffect(() => {
@@ -604,7 +643,7 @@ export default function ClientApp() {
   const [customRate, setCustomRate]       = useState(9.1);
   const [monthlyAdd, setMonthlyAdd]       = useState(50000);
   const [addMonths, setAddMonths]         = useState(9);
-  const [years, setYears]                 = useState(3);
+  const [years, setYears]                 = useState(10);
   const [customYearInput, setCustomYearInput] = useState("");
   const [autoRenew, setAutoRenew]         = useState(true);
   const [taxRate]                         = useState(10);
@@ -612,6 +651,8 @@ export default function ClientApp() {
   const [tableView, setTableView]         = useState("yearly");
   const [activeYear, setActiveYear]       = useState(1);
   const [withdrawMonth, setWithdrawMonth] = useState(18);
+  const [balanceGrowthHovered, setBalanceGrowthHovered] = useState(null);
+  const [balanceGrowthTooltipPos, setBalanceGrowthTooltipPos] = useState({ x: 0, y: 0 });
 
   // Goal Planner
   const [goalMode, setGoalMode]           = useState("time");
@@ -625,9 +666,6 @@ export default function ClientApp() {
     a: { principal: 2000000, rate: 9.1,  monthlyAdd: 50000, addMonths: 9, years: 5, paymentsPerYear: 1 },
     b: { principal: 2000000, rate: 10.5, monthlyAdd: 50000, addMonths: 9, years: 5, paymentsPerYear: 1 },
   });
-
-  // App language (English / Armenian) — used for full UI and FAQ
-  const [lang, setLang] = useState("en");
 
   const t = (key, params) => {
     let s = (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) || TRANSLATIONS.en[key] || key;
@@ -773,15 +811,17 @@ export default function ClientApp() {
           {/* Desktop: inline actions + language switch */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }} className="app-header-actions app-header-actions-inline">
             <div style={{ display: "flex", alignItems: "center", gap: 4, marginRight: 4 }}>
-              <SegBtn T={T} active={lang === "en"} onClick={() => setLang("en")} title="English">EN</SegBtn>
-              <SegBtn T={T} active={lang === "hy"} onClick={() => setLang("hy")} title="Հայերեն">HY</SegBtn>
+              <SegBtn T={T} active={lang === "hy"} onClick={() => goToLang("hy")} title="Հայերեն">HY</SegBtn>
+              <SegBtn T={T} active={lang === "en"} onClick={() => goToLang("en")} title="English">EN</SegBtn>
             </div>
             <ActionBtn T={T} icon="🖨️" label={t("btn_print")}         onClick={() => window.print()} />
             <ActionBtn T={T} icon="📊" label={t("btn_yearly_excel")}  onClick={() => downloadExcel("yearly",  result, rate, years, principal, monthlyAdd, addMonths, currency, paymentsPerYear, lang)} />
             <ActionBtn T={T} icon="📋" label={t("btn_monthly_excel")} onClick={() => downloadExcel("monthly", result, rate, years, principal, monthlyAdd, addMonths, currency, paymentsPerYear, lang)} />
-            <button className="app-header-theme-btn" onClick={() => setDark(d => !d)} style={{ width: 36, height: 36, borderRadius: 8, background: T.surfaceAlt, border: `1px solid ${T.border}`, cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }} title={dark ? t("btn_light_mode") : t("btn_dark_mode")}>
-              {dark ? "☀️" : "🌙"}
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <SegBtn T={T} active={themeMode === "light"} onClick={() => setTheme("light")} title={t("btn_light_mode")}>☀️</SegBtn>
+              <SegBtn T={T} active={themeMode === "dark"} onClick={() => setTheme("dark")} title={t("btn_dark_mode")}>🌙</SegBtn>
+              <SegBtn T={T} active={themeMode === "system"} onClick={() => setTheme("system")} title={t("btn_system_mode")}>◐</SegBtn>
+            </div>
           </div>
           {/* Mobile: overflow (kebab) menu */}
           <div ref={mobileMenuRef} className="app-header-actions-menu" style={{ position: "relative" }}>
@@ -816,8 +856,15 @@ export default function ClientApp() {
                   <span className="menu-item-icon">📋</span> {t("btn_monthly_excel")}
                 </button>
                 <div style={{ borderTop: `1px solid ${T.borderSub}`, margin: "4px 0" }} />
-                <button type="button" role="menuitem" className="mobile-menu-item" style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "12px 16px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14, color: T.text, textAlign: "left" }} onClick={() => { setDark(d => !d); setMobileMenuOpen(false); }}>
-                  <span className="menu-item-icon">{dark ? "☀️" : "🌙"}</span> {dark ? t("btn_light_mode") : t("btn_dark_mode")}
+                <div style={{ padding: "8px 16px", fontSize: 12, fontWeight: 500, color: T.textMuted }}>{t("btn_system_mode")}</div>
+                <button type="button" role="menuitem" className="mobile-menu-item" style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "12px 16px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14, color: T.text, textAlign: "left" }} onClick={() => { setTheme("light"); setMobileMenuOpen(false); }}>
+                  <span className="menu-item-icon">☀️</span> {t("btn_light_mode")}
+                </button>
+                <button type="button" role="menuitem" className="mobile-menu-item" style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "12px 16px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14, color: T.text, textAlign: "left" }} onClick={() => { setTheme("dark"); setMobileMenuOpen(false); }}>
+                  <span className="menu-item-icon">🌙</span> {t("btn_dark_mode")}
+                </button>
+                <button type="button" role="menuitem" className="mobile-menu-item" style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "12px 16px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14, color: T.text, textAlign: "left" }} onClick={() => { setTheme("system"); setMobileMenuOpen(false); }}>
+                  <span className="menu-item-icon">◐</span> {t("btn_system_mode")}
                 </button>
               </div>
             )}
@@ -966,25 +1013,65 @@ export default function ClientApp() {
           </div>
 
           {/* Mini bar chart */}
-          <div style={{ ...card, marginBottom: 16 }}>
+          <div style={{ ...card, marginBottom: 16, position: "relative" }}>
             <SectionTitle T={T}>{t("chart_balance_growth")}</SectionTitle>
-            <div style={{ display: "flex", gap: 8, alignItems: "flex-end", height: 120, padding: "8px 0 4px" }}>
+            <div
+              style={{ display: "flex", gap: 8, alignItems: "flex-end", height: 120, padding: "8px 0 4px" }}
+              onMouseLeave={() => setBalanceGrowthHovered(null)}
+            >
               {result.yearlyRows.map((r, i) => {
                 const barMax = Math.max(1, ...result.yearlyRows.map(x => x.balance));
                 const h  = Math.max(8, (r.balance / barMax) * 108);
                 const ch = Math.max(0, (r.totalContributed / barMax) * 108);
                 return (
-                  <div key={i} title={`${t("table_year")} ${r.year}: ${fmt(r.balance, sym)}`} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "default" }}>
+                  <div
+                    key={i}
+                    style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "default" }}
+                    onMouseEnter={() => setBalanceGrowthHovered(i)}
+                    onMouseMove={(e) => setBalanceGrowthTooltipPos({ x: e.clientX, y: e.clientY })}
+                  >
                     <div style={{ fontSize: 9, color: T.textMuted, whiteSpace: "nowrap" }}>{fmtShort(r.balance)}</div>
                     <div style={{ width: "100%", position: "relative", height: h }}>
                       <div style={{ position: "absolute", bottom: 0, width: "100%", height: ch, background: dark ? "#1f3352" : "#ddf4ff", borderRadius: "4px 4px 0 0" }} />
-                      <div style={{ position: "absolute", bottom: 0, width: "100%", height: h, background: `linear-gradient(to top, ${T.yellow}, ${T.yellowText})`, borderRadius: "4px 4px 0 0", opacity: 0.9 }} />
+                      <div style={{ position: "absolute", bottom: ch, width: "100%", height: Math.max(0, h - ch), background: `linear-gradient(to top, ${T.yellow}, ${T.yellowText})`, borderRadius: ch > 0 ? "0" : "4px 4px 0 0", opacity: 0.9 }} />
                     </div>
                     <div style={{ fontSize: 9, color: T.textMuted }}>Y{r.year}</div>
                   </div>
                 );
               })}
             </div>
+            {balanceGrowthHovered !== null && result.yearlyRows[balanceGrowthHovered] && (
+              <div
+                role="tooltip"
+                style={{
+                  ...tooltipStyle,
+                  position: "fixed",
+                  left: balanceGrowthTooltipPos.x,
+                  top: balanceGrowthTooltipPos.y - 8,
+                  transform: "translate(-50%, -100%)",
+                  padding: "10px 14px",
+                  minWidth: 160,
+                  pointerEvents: "none",
+                  zIndex: 1000,
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 600, color: T.text, marginBottom: 8 }}>
+                  Y{result.yearlyRows[balanceGrowthHovered].year}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ width: 10, height: 10, borderRadius: 2, background: dark ? "#1f3352" : "#ddf4ff", flexShrink: 0 }} />
+                    <span style={{ color: T.textSub }}>{t("legend_contributed")}:</span>
+                    <span style={{ fontWeight: 600, color: T.text }}>{fmt(result.yearlyRows[balanceGrowthHovered].totalContributed, sym)}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ width: 10, height: 10, borderRadius: 2, background: T.yellow, flexShrink: 0 }} />
+                    <span style={{ color: T.textSub }}>{t("legend_balance")}:</span>
+                    <span style={{ fontWeight: 600, color: T.text }}>{fmt(result.yearlyRows[balanceGrowthHovered].balance, sym)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
             <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
               <Legend2 T={T} color={dark ? "#1f3352" : "#ddf4ff"} label={t("legend_contributed")} />
               <Legend2 T={T} color={T.yellow} label={t("legend_balance")} />
@@ -1244,8 +1331,8 @@ export default function ClientApp() {
         </p>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
           <span style={{ fontSize: 12, fontWeight: 500, color: T.textMuted }}>{t("faq_lang_label")}</span>
-          <SegBtn T={T} active={lang === "en"} onClick={() => setLang("en")} role="tab" aria-selected={lang === "en"}>{t("lang_english")}</SegBtn>
-          <SegBtn T={T} active={lang === "hy"} onClick={() => setLang("hy")} role="tab" aria-selected={lang === "hy"}>{t("lang_armenian")}</SegBtn>
+          <SegBtn T={T} active={lang === "hy"} onClick={() => goToLang("hy")} role="tab" aria-selected={lang === "hy"}>{t("lang_armenian")}</SegBtn>
+          <SegBtn T={T} active={lang === "en"} onClick={() => goToLang("en")} role="tab" aria-selected={lang === "en"}>{t("lang_english")}</SegBtn>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {FAQ_DATA.map((item) => (

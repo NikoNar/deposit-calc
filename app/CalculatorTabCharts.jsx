@@ -119,7 +119,7 @@ export default function CalculatorTabCharts({
             <XAxis dataKey="name" tick={{ fontSize: 11, fill: T.textMuted }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 10, fill: T.textMuted }} tickFormatter={fmtShort} axisLine={false} tickLine={false} />
             <Tooltip
-              formatter={(v, n) => [fmt(v, sym), n === "netInterest" ? t("pie_net_interest") : t("pie_tax_paid")]}
+              formatter={(v, n, { dataKey }) => [fmt(v, sym), dataKey === "netInterest" ? t("pie_net_interest") : t("pie_tax_paid")]}
               contentStyle={tooltipStyle}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />

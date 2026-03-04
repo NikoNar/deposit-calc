@@ -43,7 +43,7 @@ export default function CompareTabChart({ yearsA, yearsB, cmpResultA, cmpResultB
           <XAxis dataKey="name" tick={{ fontSize: 11, fill: T.textMuted }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 10, fill: T.textMuted }} tickFormatter={fmtShort} axisLine={false} tickLine={false} />
           <Tooltip
-            formatter={(v, n) => [fmt(v, sym), n === "A" ? t("scenario_a") : t("scenario_b")]}
+            formatter={(v, n, { dataKey }) => [fmt(v, sym), dataKey === "A" ? t("scenario_a") : t("scenario_b")]}
             contentStyle={tooltipStyle}
           />
           <Legend wrapperStyle={{ fontSize: 12, color: T.textSub }} />
