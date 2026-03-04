@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import * as XLSX from "xlsx";
@@ -68,6 +69,8 @@ const TRANSLATIONS = {
     btn_dark_mode: "Dark mode",
     btn_system_mode: "System",
     aria_open_menu: "Open menu",
+    menu_export: "Export",
+    menu_theme: "Theme",
     tab_calculator: "Calculator",
     tab_goal_planner: "Goal Planner",
     tab_compare: "Compare",
@@ -183,6 +186,7 @@ const TRANSLATIONS = {
     faq_lang_label: "Language",
     lang_english: "English",
     lang_armenian: "Հայերեն",
+    blog_nav: "Education & News",
     footer_made_by: "Made with",
     footer_by: "by",
     footer_copyright: "For informational purposes only · Armenian Interest Savings Calculator · {year}",
@@ -199,6 +203,8 @@ const TRANSLATIONS = {
     btn_dark_mode: "Մութ ռեժիմ",
     btn_system_mode: "Համակարգ",
     aria_open_menu: "Բացել մենյու",
+    menu_export: "Արտահանել",
+    menu_theme: "Թեմա",
     tab_calculator: "Հաշվիչ",
     tab_goal_planner: "Նպատակի պլանավորիչ",
     tab_compare: "Համեմատություն",
@@ -314,6 +320,7 @@ const TRANSLATIONS = {
     faq_lang_label: "Լեզու",
     lang_english: "English",
     lang_armenian: "Հայերեն",
+    blog_nav: "Կրթություն և Խորհուրդներ",
     footer_made_by: "Ստեղծվել է",
     footer_by: "ընկերության կողմից",
     footer_copyright: "Միայն տեղեկատվական նպատակով · Տոկոսով խնայողությունների հաշվիչ · {year}",
@@ -584,28 +591,36 @@ export default function ClientApp() {
   const lang = pathname === "/en" ? "en" : "hy";
 
   const [themeMode, setThemeMode] = useState("system");
-  const [systemDark, setSystemDark] = useState(true);
+  // Use false for SSR/first paint so server and client render the same <style> (avoids hydration mismatch)
+  const [systemDark, setSystemDark] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef(null);
+  const headerDropdownRef = useRef(null);
+  const [headerDropdownOpen, setHeaderDropdownOpen] = useState(null); // null | 'actions' | 'language' | 'theme'
 
   const dark = themeMode === "system" ? systemDark : themeMode === "dark";
   const T = dark ? DARK : LIGHT;
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+  useEffect(() => {
+    if (!mounted) return;
     const stored = typeof window !== "undefined" ? localStorage.getItem(THEME_STORAGE_KEY) : null;
     if (stored === "light" || stored === "dark" || stored === "system") setThemeMode(stored);
-  }, []);
+  }, [mounted]);
   useEffect(() => {
     document.documentElement.lang = lang === "en" ? "en" : "hy";
   }, [lang]);
   useEffect(() => {
-    if (themeMode !== "system") return;
+    if (!mounted || themeMode !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     setSystemDark(mq.matches);
     const fn = (e) => setSystemDark(e.matches);
     mq.addEventListener("change", fn);
     return () => mq.removeEventListener("change", fn);
-  }, [themeMode]);
+  }, [mounted, themeMode]);
   const setTheme = (mode) => {
     setThemeMode(mode);
     if (typeof window !== "undefined") localStorage.setItem(THEME_STORAGE_KEY, mode);
@@ -632,6 +647,23 @@ export default function ClientApp() {
       document.removeEventListener("keydown", onKey);
     };
   }, [mobileMenuOpen]);
+
+  // Close header dropdown on outside click or Escape
+  useEffect(() => {
+    if (headerDropdownOpen == null) return;
+    const close = (e) => {
+      if (headerDropdownRef.current && !headerDropdownRef.current.contains(e.target)) setHeaderDropdownOpen(null);
+    };
+    const onKey = (e) => { if (e.key === "Escape") setHeaderDropdownOpen(null); };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("touchstart", close, { passive: true });
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("touchstart", close);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [headerDropdownOpen]);
 
   const [activeTab, setActiveTab]         = useState("Calculator");
   const [currency, setCurrency]           = useState("AMD");
@@ -743,6 +775,9 @@ export default function ClientApp() {
         /* Tab strip: scrollable with padding so first/last tab have room */
         .app-bar-tabs { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
         .app-bar-tabs::after { content: ''; display: block; flex: 0 0 16px; }
+        /* Desktop header dropdowns: hover states */
+        .header-dropdown-panel .header-dropdown-item:hover { background: ${T.surfaceAlt} !important; }
+        .header-dropdown-panel .header-dropdown-item:active { opacity: 0.9; }
         /* Mobile: overflow menu (hide inline actions, show menu trigger) */
         .app-header-actions-menu { display: none; position: relative; }
         @media (max-width: 768px) {
@@ -808,19 +843,88 @@ export default function ClientApp() {
               <div style={{ fontSize: 10, color: T.textMuted, marginTop: 2 }} className="app-header-subtitle">{t("header_subtitle")}</div>
             </div>
           </div>
-          {/* Desktop: inline actions + language switch */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }} className="app-header-actions app-header-actions-inline">
-            <div style={{ display: "flex", alignItems: "center", gap: 4, marginRight: 4 }}>
-              <SegBtn T={T} active={lang === "hy"} onClick={() => goToLang("hy")} title="Հայերեն">HY</SegBtn>
-              <SegBtn T={T} active={lang === "en"} onClick={() => goToLang("en")} title="English">EN</SegBtn>
+          {/* Desktop: dropdowns for Export, Language, Theme */}
+          <div ref={headerDropdownRef} style={{ display: "flex", alignItems: "center", gap: 6, position: "relative" }} className="app-header-actions app-header-actions-inline">
+            {/* Actions (Print & Excel) dropdown */}
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                aria-haspopup="true"
+                aria-expanded={headerDropdownOpen === "actions"}
+                onClick={() => setHeaderDropdownOpen(o => o === "actions" ? null : "actions")}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 500, whiteSpace: "nowrap", border: `1px solid ${headerDropdownOpen === "actions" ? T.accent : T.border}`, background: headerDropdownOpen === "actions" ? T.accentBg : T.surfaceAlt, color: headerDropdownOpen === "actions" ? T.accentText : T.textSub, transition: "all .15s" }}
+                title={t("menu_export")}
+              >
+                <span style={{ fontSize: 14 }}>📤</span>
+                <span className="action-btn-label">{t("menu_export")}</span>
+                <span style={{ fontSize: 10, opacity: 0.9, transform: headerDropdownOpen === "actions" ? "rotate(180deg)" : "none", transition: "transform .2s" }}>▾</span>
+              </button>
+              {headerDropdownOpen === "actions" && (
+                <div role="menu" className="header-dropdown-panel" style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", minWidth: 180, padding: "6px 0", borderRadius: 10, background: T.surface, border: `1px solid ${T.border}`, boxShadow: T.shadowMd, zIndex: 200 }}>
+                  <button type="button" role="menuitem" className="header-dropdown-item" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: T.text, textAlign: "left" }} onClick={() => { window.print(); setHeaderDropdownOpen(null); }}>
+                    <span style={{ fontSize: 14 }}>🖨️</span> {t("btn_print")}
+                  </button>
+                  <button type="button" role="menuitem" className="header-dropdown-item" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: T.text, textAlign: "left" }} onClick={() => { downloadExcel("yearly", result, rate, years, principal, monthlyAdd, addMonths, currency, paymentsPerYear, lang); setHeaderDropdownOpen(null); }}>
+                    <span style={{ fontSize: 14 }}>📊</span> {t("btn_yearly_excel")}
+                  </button>
+                  <button type="button" role="menuitem" className="header-dropdown-item" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: T.text, textAlign: "left" }} onClick={() => { downloadExcel("monthly", result, rate, years, principal, monthlyAdd, addMonths, currency, paymentsPerYear, lang); setHeaderDropdownOpen(null); }}>
+                    <span style={{ fontSize: 14 }}>📋</span> {t("btn_monthly_excel")}
+                  </button>
+                </div>
+              )}
             </div>
-            <ActionBtn T={T} icon="🖨️" label={t("btn_print")}         onClick={() => window.print()} />
-            <ActionBtn T={T} icon="📊" label={t("btn_yearly_excel")}  onClick={() => downloadExcel("yearly",  result, rate, years, principal, monthlyAdd, addMonths, currency, paymentsPerYear, lang)} />
-            <ActionBtn T={T} icon="📋" label={t("btn_monthly_excel")} onClick={() => downloadExcel("monthly", result, rate, years, principal, monthlyAdd, addMonths, currency, paymentsPerYear, lang)} />
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <SegBtn T={T} active={themeMode === "light"} onClick={() => setTheme("light")} title={t("btn_light_mode")}>☀️</SegBtn>
-              <SegBtn T={T} active={themeMode === "dark"} onClick={() => setTheme("dark")} title={t("btn_dark_mode")}>🌙</SegBtn>
-              <SegBtn T={T} active={themeMode === "system"} onClick={() => setTheme("system")} title={t("btn_system_mode")}>◐</SegBtn>
+            {/* Language dropdown */}
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                aria-haspopup="true"
+                aria-expanded={headerDropdownOpen === "language"}
+                onClick={() => setHeaderDropdownOpen(o => o === "language" ? null : "language")}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 500, whiteSpace: "nowrap", border: `1px solid ${headerDropdownOpen === "language" ? T.accent : T.border}`, background: headerDropdownOpen === "language" ? T.accentBg : T.surfaceAlt, color: headerDropdownOpen === "language" ? T.accentText : T.textSub, transition: "all .15s" }}
+                title={t("faq_lang_label")}
+              >
+                <span style={{ fontSize: 14 }}>🌐</span>
+                <span className="action-btn-label">{lang === "en" ? "EN" : "HY"}</span>
+                <span style={{ fontSize: 10, opacity: 0.9, transform: headerDropdownOpen === "language" ? "rotate(180deg)" : "none", transition: "transform .2s" }}>▾</span>
+              </button>
+              {headerDropdownOpen === "language" && (
+                <div role="menu" className="header-dropdown-panel" style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", minWidth: 160, padding: "6px 0", borderRadius: 10, background: T.surface, border: `1px solid ${T.border}`, boxShadow: T.shadowMd, zIndex: 200 }}>
+                  <button type="button" role="menuitem" className="header-dropdown-item" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: lang === "en" ? T.accentBg : "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: T.text, textAlign: "left", fontWeight: lang === "en" ? 600 : 400 }} onClick={() => { goToLang("en"); setHeaderDropdownOpen(null); }}>
+                    {t("lang_english")}
+                  </button>
+                  <button type="button" role="menuitem" className="header-dropdown-item" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: lang === "hy" ? T.accentBg : "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: T.text, textAlign: "left", fontWeight: lang === "hy" ? 600 : 400 }} onClick={() => { goToLang("hy"); setHeaderDropdownOpen(null); }}>
+                    {t("lang_armenian")}
+                  </button>
+                </div>
+              )}
+            </div>
+            {/* Theme dropdown */}
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                aria-haspopup="true"
+                aria-expanded={headerDropdownOpen === "theme"}
+                onClick={() => setHeaderDropdownOpen(o => o === "theme" ? null : "theme")}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 500, whiteSpace: "nowrap", border: `1px solid ${headerDropdownOpen === "theme" ? T.accent : T.border}`, background: headerDropdownOpen === "theme" ? T.accentBg : T.surfaceAlt, color: headerDropdownOpen === "theme" ? T.accentText : T.textSub, transition: "all .15s" }}
+                title={t("menu_theme")}
+              >
+                <span style={{ fontSize: 14 }}>{themeMode === "light" ? "☀️" : themeMode === "dark" ? "🌙" : "◐"}</span>
+                <span className="action-btn-label">{themeMode === "light" ? t("btn_light_mode") : themeMode === "dark" ? t("btn_dark_mode") : t("btn_system_mode")}</span>
+                <span style={{ fontSize: 10, opacity: 0.9, transform: headerDropdownOpen === "theme" ? "rotate(180deg)" : "none", transition: "transform .2s" }}>▾</span>
+              </button>
+              {headerDropdownOpen === "theme" && (
+                <div role="menu" className="header-dropdown-panel" style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", minWidth: 160, padding: "6px 0", borderRadius: 10, background: T.surface, border: `1px solid ${T.border}`, boxShadow: T.shadowMd, zIndex: 200 }}>
+                  <button type="button" role="menuitem" className="header-dropdown-item" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: themeMode === "light" ? T.accentBg : "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: T.text, textAlign: "left", fontWeight: themeMode === "light" ? 600 : 400 }} onClick={() => { setTheme("light"); setHeaderDropdownOpen(null); }}>
+                    <span style={{ fontSize: 14 }}>☀️</span> {t("btn_light_mode")}
+                  </button>
+                  <button type="button" role="menuitem" className="header-dropdown-item" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: themeMode === "dark" ? T.accentBg : "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: T.text, textAlign: "left", fontWeight: themeMode === "dark" ? 600 : 400 }} onClick={() => { setTheme("dark"); setHeaderDropdownOpen(null); }}>
+                    <span style={{ fontSize: 14 }}>🌙</span> {t("btn_dark_mode")}
+                  </button>
+                  <button type="button" role="menuitem" className="header-dropdown-item" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: themeMode === "system" ? T.accentBg : "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: T.text, textAlign: "left", fontWeight: themeMode === "system" ? 600 : 400 }} onClick={() => { setTheme("system"); setHeaderDropdownOpen(null); }}>
+                    <span style={{ fontSize: 14 }}>◐</span> {t("btn_system_mode")}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
           {/* Mobile: overflow (kebab) menu */}
@@ -1374,6 +1478,11 @@ export default function ClientApp() {
 
       {/* ── FOOTER ── */}
       <footer className="app-footer" style={{ background: T.surface, borderTop: `1px solid ${T.border}`, textAlign: "center" }}>
+        <p style={{ fontSize: 13, color: T.textMuted, marginBottom: 6 }}>
+          <Link href={lang === "en" ? "/en/blog" : "/blog"} style={{ color: T.accent, textDecoration: "none", fontWeight: 500 }}>
+            {t("blog_nav")}
+          </Link>
+        </p>
         <p style={{ fontSize: 13, color: T.textMuted }}>
           {t("footer_made_by")} <span style={{ color: T.red }}>♥</span> {t("footer_by")}{" "}
           <span style={{ fontWeight: 600, color: T.text }}>Codeman Studio</span>

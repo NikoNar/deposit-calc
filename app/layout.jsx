@@ -1,5 +1,5 @@
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/react";
+import VercelAnalytics from "./VercelAnalytics.jsx";
 
 export const metadata = {
   title: "Compound Interest Calculator | Saving.am",
@@ -130,7 +130,7 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         {children}
-        <Analytics />
+        <VercelAnalytics />
       </body>
     </html>
   );
