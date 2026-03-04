@@ -187,6 +187,7 @@ const TRANSLATIONS = {
     lang_english: "English",
     lang_armenian: "Հայերեն",
     blog_nav: "Education & News",
+    financial_health_nav: "Financial Health",
     footer_made_by: "Made with",
     footer_by: "by",
     footer_copyright: "For informational purposes only · Armenian Interest Savings Calculator · {year}",
@@ -321,6 +322,7 @@ const TRANSLATIONS = {
     lang_english: "English",
     lang_armenian: "Հայերեն",
     blog_nav: "Կրթություն և Խորհուրդներ",
+    financial_health_nav: "Ֆինանսական առողջություն",
     footer_made_by: "Ստեղծվել է",
     footer_by: "ընկերության կողմից",
     footer_copyright: "Միայն տեղեկատվական նպատակով · Տոկոսով խնայողությունների հաշվիչ · {year}",
@@ -1481,6 +1483,10 @@ export default function ClientApp() {
         <p style={{ fontSize: 13, color: T.textMuted, marginBottom: 6 }}>
           <Link href={lang === "en" ? "/en/blog" : "/blog"} style={{ color: T.accent, textDecoration: "none", fontWeight: 500 }}>
             {t("blog_nav")}
+          </Link>
+          {" · "}
+          <Link href={lang === "en" ? "/en/financial-health" : "/financial-health"} style={{ color: T.accent, textDecoration: "none", fontWeight: 500 }}>
+            {t("financial_health_nav")}
           </Link>
         </p>
         <p style={{ fontSize: 13, color: T.textMuted }}>
