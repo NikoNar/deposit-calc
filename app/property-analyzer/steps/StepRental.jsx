@@ -1,0 +1,79 @@
+"use client";
+
+export default function StepRental({ lang, T, form, updateForm, t, Field, FieldPercent }) {
+  return (
+    <div>
+      <h2 style={{ fontSize: 18, fontWeight: 600, color: T.text, marginBottom: 16 }}>{t(lang, "step5_title")}</h2>
+      <p style={{ fontSize: 14, color: T.textSub, marginBottom: 16 }}>{t(lang, "plan_to_rent")}</p>
+      <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
+        <button
+          type="button"
+          onClick={() => updateForm({ planToRent: true })}
+          style={{
+            padding: "10px 20px",
+            borderRadius: 8,
+            border: `2px solid ${form.planToRent ? T.accent : T.border}`,
+            background: form.planToRent ? T.accentBg : T.surfaceAlt,
+            color: form.planToRent ? T.accentText : T.textSub,
+            fontSize: 14,
+            fontWeight: 500,
+            cursor: "pointer",
+          }}
+        >
+          {t(lang, "yes")}
+        </button>
+        <button
+          type="button"
+          onClick={() => updateForm({ planToRent: false })}
+          style={{
+            padding: "10px 20px",
+            borderRadius: 8,
+            border: `2px solid ${!form.planToRent ? T.accent : T.border}`,
+            background: !form.planToRent ? T.accentBg : T.surfaceAlt,
+            color: !form.planToRent ? T.accentText : T.textSub,
+            fontSize: 14,
+            fontWeight: 500,
+            cursor: "pointer",
+          }}
+        >
+          {t(lang, "no")}
+        </button>
+      </div>
+      {form.planToRent && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
+          <Field
+            label={t(lang, "expected_rent")}
+            value={form.expectedRent}
+            onChange={(v) => updateForm({ expectedRent: v })}
+            T={T}
+            placeholder={t(lang, "placeholder")}
+          />
+          <Field
+            label={t(lang, "maintenance_costs")}
+            value={form.maintenanceCosts}
+            onChange={(v) => updateForm({ maintenanceCosts: v })}
+            T={T}
+            placeholder={t(lang, "placeholder")}
+          />
+          <Field
+            label={t(lang, "property_tax")}
+            value={form.propertyTax}
+            onChange={(v) => updateForm({ propertyTax: v })}
+            T={T}
+            placeholder={t(lang, "placeholder")}
+          />
+          <FieldPercent
+            label={t(lang, "vacancy_rate")}
+            value={form.vacancyRatePct}
+            onChange={(v) => updateForm({ vacancyRatePct: v })}
+            T={T}
+            placeholder="5"
+            min={0}
+            max={100}
+            step={1}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
