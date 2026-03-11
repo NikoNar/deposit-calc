@@ -3,7 +3,7 @@ import PropertyAnalyzerApp from "../../property-analyzer/PropertyAnalyzerApp.jsx
 export const metadata = {
   title: "Property Affordability & Rental Investment Analyzer | Saving.am",
   description:
-    "Find out what property price you can afford, what loan you can take, and whether rental income can cover your mortgage.",
+    "Free calculator: find out what property price you can afford in Armenia, what mortgage you can safely take, whether rental income will cover your monthly payment, and get a financial health score. Uses your income, expenses, savings, and loan terms. Works with or without a specific property price.",
 };
 
 export default function EnPropertyAnalyzerPage() {

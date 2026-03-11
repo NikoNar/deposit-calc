@@ -8,14 +8,14 @@ const LABELS = {
   hy: { rent: "Էֆեկտիվ վարձ", loan: "Վարկ", maintenance: "Սպասարկում", tax: "Հարկ" },
 };
 
-function formatAmd(n) {
+function formatMoney(n, sym) {
   if (n == null || Number.isNaN(n)) return "—";
   const abs = Math.round(Math.abs(n));
   if (abs >= 1e6) return (n / 1e6).toFixed(1) + "M";
   return abs.toLocaleString("en-US");
 }
 
-export default function RentVsCostsChart({ scenarioResult, form, T, lang }) {
+export default function RentVsCostsChart({ scenarioResult, form, T, lang, sym = "֏" }) {
   const data = useMemo(() => {
     const labels = LABELS[lang] || LABELS.en;
     const loan =
@@ -47,8 +47,8 @@ export default function RentVsCostsChart({ scenarioResult, form, T, lang }) {
     <ResponsiveContainer width="100%" height={260}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
         <XAxis dataKey="name" tick={{ fontSize: 11, fill: T.textMuted }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fontSize: 10, fill: T.textMuted }} tickFormatter={formatAmd} axisLine={false} tickLine={false} />
-        <Tooltip formatter={(v) => [formatAmd(v) + " AMD", ""]} contentStyle={tooltipStyle} />
+        <YAxis tick={{ fontSize: 10, fill: T.textMuted }} tickFormatter={(v) => formatMoney(v, sym)} axisLine={false} tickLine={false} />
+        <Tooltip formatter={(v) => [formatMoney(v, sym) + " " + sym, ""]} contentStyle={tooltipStyle} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
         <Bar dataKey="value" radius={[4, 4, 0, 0]}>
         {data.map((entry, i) => (

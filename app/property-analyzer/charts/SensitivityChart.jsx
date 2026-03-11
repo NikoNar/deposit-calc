@@ -9,14 +9,14 @@ const LABELS = {
   hy: { payment: "Ամսական վճար", affordablePrice: "Ձեռքբերելի գին" },
 };
 
-function formatAmd(n) {
+function formatMoney(n, sym) {
   if (n == null || Number.isNaN(n)) return "—";
   const abs = Math.round(Math.abs(n));
   if (abs >= 1e6) return (n / 1e6).toFixed(1) + "M";
   return abs.toLocaleString("en-US");
 }
 
-export default function SensitivityChart({ scenarioResult, form, T, lang }) {
+export default function SensitivityChart({ scenarioResult, form, T, lang, sym = "֏" }) {
   const rates = [8, 9, 10, 11, 12, 13];
   const term = Math.max(1, Math.min(30, Math.round(Number(form.loanTermYears) || 20)));
   const totalIncome = (form.monthlySalary || 0) + (form.additionalIncome || 0);
@@ -60,7 +60,7 @@ export default function SensitivityChart({ scenarioResult, form, T, lang }) {
         <YAxis
           yAxisId="left"
           tick={{ fontSize: 10, fill: T.textMuted }}
-          tickFormatter={formatAmd}
+          tickFormatter={(v) => formatMoney(v, sym)}
           axisLine={false}
           tickLine={false}
         />
@@ -68,12 +68,12 @@ export default function SensitivityChart({ scenarioResult, form, T, lang }) {
           yAxisId="right"
           orientation="right"
           tick={{ fontSize: 10, fill: T.textMuted }}
-          tickFormatter={formatAmd}
+          tickFormatter={(v) => formatMoney(v, sym)}
           axisLine={false}
           tickLine={false}
         />
         <Tooltip
-          formatter={(v) => [formatAmd(v) + " AMD", ""]}
+          formatter={(v) => [formatMoney(v, sym) + " " + sym, ""]}
           contentStyle={tooltipStyle}
           labelFormatter={(l) => (lang === "en" ? "Interest rate: " + l : "Տոկոսադրույք: " + l)}
         />

@@ -5,14 +5,14 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
 const LABELS = { en: { loan: "Loan", downPayment: "Down payment" }, hy: { loan: "Վարկ", downPayment: "Առաջին մուծում" } };
 
-function formatAmd(n) {
+function formatMoney(n, sym) {
   if (n == null || Number.isNaN(n)) return "—";
   const abs = Math.round(Math.abs(n));
-  if (abs >= 1e6) return (n / 1e6).toFixed(1) + "M AMD";
-  return abs.toLocaleString("en-US") + " AMD";
+  if (abs >= 1e6) return (n / 1e6).toFixed(1) + "M " + sym;
+  return abs.toLocaleString("en-US") + " " + sym;
 }
 
-export default function PropertyBreakdownChart({ scenarioResult, form, T, lang }) {
+export default function PropertyBreakdownChart({ scenarioResult, form, T, lang, sym = "֏" }) {
   const data = useMemo(() => {
     const labels = LABELS[lang] || LABELS.en;
     if (scenarioResult.scenario === "A") {
@@ -31,7 +31,7 @@ export default function PropertyBreakdownChart({ scenarioResult, form, T, lang }
       { name: labels.loan, value: loan, color: T.accent },
       { name: labels.downPayment, value: down, color: T.green },
     ].filter((d) => d.value > 0);
-  }, [scenarioResult, T, lang]);
+  }, [scenarioResult, T, lang, sym]);
 
   if (data.length === 0) {
     return (
@@ -60,7 +60,7 @@ export default function PropertyBreakdownChart({ scenarioResult, form, T, lang }
             <Cell key={i} fill={entry.color} stroke={T.border} />
           ))}
         </Pie>
-        <Tooltip formatter={(v) => [formatAmd(v), ""]} contentStyle={tooltipStyle} />
+        <Tooltip formatter={(v) => [formatMoney(v, sym), ""]} contentStyle={tooltipStyle} />
       </PieChart>
     </ResponsiveContainer>
   );

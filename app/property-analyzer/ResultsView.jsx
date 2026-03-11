@@ -31,13 +31,13 @@ const RESULTS_TRANSLATIONS = {
     health_dangerous: "This investment is financially dangerous. Reduce debt or increase income before buying.",
     health_excellent: "This investment looks financially healthy.",
     health_good: "This investment is in good shape; monitor your budget.",
-    required_rent_to_cover: "If you rent, aim for at least {amount} AMD/month to cover costs.",
+    required_rent_to_cover: "If you rent, aim for at least {amount} {sym}/month to cover costs.",
     charts_breakdown: "Property breakdown",
     charts_cashflow: "Monthly cashflow",
     charts_rent_vs_costs: "Rent vs costs",
     charts_sensitivity: "Interest rate sensitivity",
-    amd_month: "AMD/month",
-    amd: "AMD",
+    amd_month: "{sym}/month",
+    amd: "{sym}",
     effective_rent: "Effective rent",
     monthly_profit: "Monthly profit",
   },
@@ -64,13 +64,13 @@ const RESULTS_TRANSLATIONS = {
     health_dangerous: "Այս ներդրումը ֆինանսապես վտանգավոր է: Նախ նվազեցրեք պարտքը կամ ավելացրեք եկամուտը:",
     health_excellent: "Այս ներդրումը ֆինանսապես առողջ է:",
     health_good: "Այս ներդրումը լավ վիճակում է; վերահսկեք բյուջեն:",
-    required_rent_to_cover: "Եթե վարձով եք տալիս, նպատակադրեք ամենաքիչ {amount} AMD/ամիս՝ ծախսերը ծածկելու համար:",
+    required_rent_to_cover: "Եթե վարձով եք տալիս, նպատակադրեք ամենաքիչ {amount} {sym}/ամիս՝ ծախսերը ծածկելու համար:",
     charts_breakdown: "Գույքի կազմ",
     charts_cashflow: "Ամսական դրամահոսք",
     charts_rent_vs_costs: "Վարձ vs ծախսեր",
     charts_sensitivity: "Տոկոսադրույքի զգայունություն",
-    amd_month: "AMD/ամիս",
-    amd: "AMD",
+    amd_month: "{sym}/ամիս",
+    amd: "{sym}",
     effective_rent: "Էֆեկտիվ վարձ",
     monthly_profit: "Ամսական շահույթ",
   },
@@ -86,7 +86,9 @@ function formatNum(n) {
   return Math.round(n).toLocaleString("en-US");
 }
 
-export default function ResultsView({ lang, T, form, scenarioResult, healthResult, insights, onEditInputs }) {
+export default function ResultsView({ lang, T, sym, currency, form, scenarioResult, healthResult, insights, onEditInputs }) {
+  const tWithSym = (key, params = {}) => t(lang, key, { sym, ...params });
+
   if (!scenarioResult) {
     return (
       <div style={{ padding: 24, textAlign: "center", color: T.textSub }}>
@@ -158,31 +160,31 @@ export default function ResultsView({ lang, T, form, scenarioResult, healthResul
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
           {isScenarioB ? (
             <>
-              <Card T={T} label={t(lang, "max_safe_payment")} value={formatNum(r.maxSafeMonthlyPayment)} suffix={t(lang, "amd_month")} />
-              <Card T={T} label={t(lang, "loan_amount")} value={formatNum(r.maxLoanAmount)} suffix={t(lang, "amd")} />
-              <Card T={T} label={t(lang, "affordable_price")} value={formatNum(r.affordablePrice)} suffix={t(lang, "amd")} />
+              <Card T={T} label={t(lang, "max_safe_payment")} value={formatNum(r.maxSafeMonthlyPayment)} suffix={tWithSym("amd_month")} />
+              <Card T={T} label={t(lang, "loan_amount")} value={formatNum(r.maxLoanAmount)} suffix={tWithSym("amd")} />
+              <Card T={T} label={t(lang, "affordable_price")} value={formatNum(r.affordablePrice)} suffix={tWithSym("amd")} />
               {r.recommendedPriceRange && (
                 <Card
                   T={T}
                   label={t(lang, "recommended_range")}
                   value={`${formatNum(r.recommendedPriceRange.min)} – ${formatNum(r.recommendedPriceRange.max)}`}
-                  suffix={t(lang, "amd")}
+                  suffix={tWithSym("amd")}
                 />
               )}
               {form.planToRent && r.requiredRentToCover > 0 && (
-                <Card T={T} label={t(lang, "required_rent")} value={formatNum(r.requiredRentToCover)} suffix={t(lang, "amd_month")} />
+                <Card T={T} label={t(lang, "required_rent")} value={formatNum(r.requiredRentToCover)} suffix={tWithSym("amd_month")} />
               )}
             </>
           ) : (
             <>
-              <Card T={T} label={t(lang, "property_price")} value={formatNum(r.propertyPrice)} suffix={t(lang, "amd")} />
-              <Card T={T} label={t(lang, "down_payment")} value={formatNum(r.downPayment)} suffix={t(lang, "amd")} />
-              <Card T={T} label={t(lang, "loan_amount")} value={formatNum(r.loanAmount)} suffix={t(lang, "amd")} />
-              <Card T={T} label={t(lang, "monthly_payment")} value={formatNum(r.monthlyPayment)} suffix={t(lang, "amd_month")} />
+              <Card T={T} label={t(lang, "property_price")} value={formatNum(r.propertyPrice)} suffix={tWithSym("amd")} />
+              <Card T={T} label={t(lang, "down_payment")} value={formatNum(r.downPayment)} suffix={tWithSym("amd")} />
+              <Card T={T} label={t(lang, "loan_amount")} value={formatNum(r.loanAmount)} suffix={tWithSym("amd")} />
+              <Card T={T} label={t(lang, "monthly_payment")} value={formatNum(r.monthlyPayment)} suffix={tWithSym("amd_month")} />
               {form.planToRent && (
                 <>
-                  <Card T={T} label={t(lang, "effective_rent")} value={formatNum(r.effectiveRent)} suffix={t(lang, "amd_month")} />
-                  <Card T={T} label={t(lang, "monthly_profit")} value={formatNum(r.monthlyProfit)} suffix={t(lang, "amd_month")} />
+                  <Card T={T} label={t(lang, "effective_rent")} value={formatNum(r.effectiveRent)} suffix={tWithSym("amd_month")} />
+                  <Card T={T} label={t(lang, "monthly_profit")} value={formatNum(r.monthlyProfit)} suffix={tWithSym("amd_month")} />
                 </>
               )}
             </>
@@ -243,7 +245,7 @@ export default function ResultsView({ lang, T, form, scenarioResult, healthResul
                 : {};
               return (
                 <li key={i} style={{ marginBottom: 8 }}>
-                  {t(lang, item.key, params)}
+                  {t(lang, item.key, { ...params, sym })}
                 </li>
               );
             })}
@@ -253,24 +255,24 @@ export default function ResultsView({ lang, T, form, scenarioResult, healthResul
 
       <section style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 16, fontWeight: 600, color: T.text, marginBottom: 16 }}>{t(lang, "charts_breakdown")}</h2>
-        <PropertyBreakdownChart scenarioResult={r} form={form} T={T} lang={lang} />
+        <PropertyBreakdownChart scenarioResult={r} form={form} T={T} lang={lang} sym={sym} />
       </section>
 
       <section style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 16, fontWeight: 600, color: T.text, marginBottom: 16 }}>{t(lang, "charts_cashflow")}</h2>
-        <MonthlyCashflowChart scenarioResult={r} form={form} T={T} lang={lang} />
+        <MonthlyCashflowChart scenarioResult={r} form={form} T={T} lang={lang} sym={sym} />
       </section>
 
       {form.planToRent && (
         <section style={{ marginBottom: 24 }}>
           <h2 style={{ fontSize: 16, fontWeight: 600, color: T.text, marginBottom: 16 }}>{t(lang, "charts_rent_vs_costs")}</h2>
-          <RentVsCostsChart scenarioResult={r} form={form} T={T} lang={lang} />
+          <RentVsCostsChart scenarioResult={r} form={form} T={T} lang={lang} sym={sym} />
         </section>
       )}
 
       <section style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 16, fontWeight: 600, color: T.text, marginBottom: 16 }}>{t(lang, "charts_sensitivity")}</h2>
-        <SensitivityChart scenarioResult={r} form={form} T={T} lang={lang} />
+        <SensitivityChart scenarioResult={r} form={form} T={T} lang={lang} sym={sym} />
       </section>
     </>
   );

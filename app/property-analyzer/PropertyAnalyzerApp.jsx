@@ -14,25 +14,26 @@ import ResultsView from "./ResultsView.jsx";
 
 const THEME_STORAGE_KEY = "deposit-calc-theme";
 const INPUTS_STORAGE_KEY = "property-analyzer-last-inputs";
+const CURRENCY_SYMBOLS = { AMD: "֏", USD: "$", EUR: "€" };
 
 const defaultFormState = () => ({
-  monthlySalary: 850000,
-  additionalIncome: 100000,
-  livingExpenses: 400000,
-  existingLoans: 80000,
+  monthlySalary: 0,
+  additionalIncome: 0,
+  livingExpenses: 0,
+  existingLoans: 0,
   otherObligations: 0,
-  cashSavings: 10000000,
-  bankDeposits: 5000000,
-  plannedDownPayment: 10000000,
-  interestRate: 10,
-  loanTermYears: 20,
-  minDownPaymentPct: 20,
+  cashSavings: 0,
+  bankDeposits: 0,
+  plannedDownPayment: 0,
+  interestRate: 0,
+  loanTermYears: 0,
+  minDownPaymentPct: 0,
   propertyPrice: null,
-  planToRent: true,
-  expectedRent: 250000,
-  maintenanceCosts: 20000,
-  propertyTax: 10000,
-  vacancyRatePct: 5,
+  planToRent: false,
+  expectedRent: 0,
+  maintenanceCosts: 0,
+  propertyTax: 0,
+  vacancyRatePct: 0,
 });
 
 export default function PropertyAnalyzerApp({ lang: langProp }) {
@@ -45,6 +46,7 @@ export default function PropertyAnalyzerApp({ lang: langProp }) {
   const [step, setStep] = useState(1);
   const [showResults, setShowResults] = useState(false);
   const [form, setForm] = useState(defaultFormState);
+  const [currency, setCurrency] = useState("AMD");
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
@@ -58,7 +60,10 @@ export default function PropertyAnalyzerApp({ lang: langProp }) {
       const raw = localStorage.getItem(INPUTS_STORAGE_KEY);
       if (raw) {
         const data = JSON.parse(raw);
-        if (data && typeof data === "object") setForm((prev) => ({ ...defaultFormState(), ...data }));
+        if (data && typeof data === "object") {
+          setForm((prev) => ({ ...defaultFormState(), ...data }));
+          if (data.currency === "USD" || data.currency === "EUR") setCurrency(data.currency);
+        }
       }
     } catch (_) {}
   }, [mounted]);
@@ -73,6 +78,7 @@ export default function PropertyAnalyzerApp({ lang: langProp }) {
 
   const dark = themeMode === "system" ? systemDark : themeMode === "dark";
   const T = dark ? DARK : LIGHT;
+  const sym = CURRENCY_SYMBOLS[currency];
 
   const setTheme = (mode) => {
     setThemeMode(mode);
@@ -153,7 +159,7 @@ export default function PropertyAnalyzerApp({ lang: langProp }) {
   const handleSeeResults = () => {
     if (typeof window !== "undefined") {
       try {
-        localStorage.setItem(INPUTS_STORAGE_KEY, JSON.stringify(form));
+        localStorage.setItem(INPUTS_STORAGE_KEY, JSON.stringify({ ...form, currency }));
       } catch (_) {}
     }
     setShowResults(true);
@@ -213,7 +219,26 @@ export default function PropertyAnalyzerApp({ lang: langProp }) {
               {lang === "en" ? "Property Affordability & Rental Analyzer" : "Գույքի ձեռքբերելիություն և վարձակալության վերլուծիչ"}
             </span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 11, fontWeight: 500, color: T.textMuted, marginRight: 2 }}>{lang === "en" ? "Currency" : "Արժույթ"}</span>
+            {["AMD", "USD", "EUR"].map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCurrency(c)}
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: 8,
+                  border: `1px solid ${currency === c ? T.accent : T.border}`,
+                  background: currency === c ? T.accentBg : "transparent",
+                  color: currency === c ? T.accentText : T.textSub,
+                  fontSize: 12,
+                  cursor: "pointer",
+                }}
+              >
+                {CURRENCY_SYMBOLS[c]} {c}
+              </button>
+            ))}
             <select
               value={themeMode}
               onChange={(e) => setTheme(e.target.value)}
@@ -270,6 +295,8 @@ export default function PropertyAnalyzerApp({ lang: langProp }) {
           <ResultsView
             lang={lang}
             T={T}
+            sym={sym}
+            currency={currency}
             form={form}
             scenarioResult={scenarioResult}
             healthResult={healthResult}
@@ -280,6 +307,8 @@ export default function PropertyAnalyzerApp({ lang: langProp }) {
           <WizardSteps
             lang={lang}
             T={T}
+            sym={sym}
+            currency={currency}
             step={step}
             setStep={setStep}
             form={form}

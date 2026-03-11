@@ -8,14 +8,14 @@ const LABELS = {
   hy: { income: "Եկամուտ", expenses: "Ծախսեր", loan: "Վարկի վճար", surplus: "Մնացորդ" },
 };
 
-function formatAmd(n) {
+function formatMoney(n, sym) {
   if (n == null || Number.isNaN(n)) return "—";
   const abs = Math.round(Math.abs(n));
   if (abs >= 1e6) return (n / 1e6).toFixed(1) + "M";
   return abs.toLocaleString("en-US");
 }
 
-export default function MonthlyCashflowChart({ scenarioResult, form, T, lang }) {
+export default function MonthlyCashflowChart({ scenarioResult, form, T, lang, sym = "֏" }) {
   const totalIncome = (form.monthlySalary || 0) + (form.additionalIncome || 0);
   const totalExpenses = (form.livingExpenses || 0) + (form.existingLoans || 0) + (form.otherObligations || 0);
   const loanPayment =
@@ -38,9 +38,9 @@ export default function MonthlyCashflowChart({ scenarioResult, form, T, lang }) 
   return (
     <ResponsiveContainer width="100%" height={260}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 8, left: 8 }} layout="vertical" barCategoryGap="20%">
-        <XAxis type="number" tick={{ fontSize: 11, fill: T.textMuted }} tickFormatter={formatAmd} axisLine={false} tickLine={false} />
+        <XAxis type="number" tick={{ fontSize: 11, fill: T.textMuted }} tickFormatter={(v) => formatMoney(v, sym)} axisLine={false} tickLine={false} />
         <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: T.text }} width={100} axisLine={false} tickLine={false} />
-        <Tooltip formatter={(v) => [formatAmd(v) + " AMD", ""]} contentStyle={tooltipStyle} />
+        <Tooltip formatter={(v) => [formatMoney(v, sym) + " " + sym, ""]} contentStyle={tooltipStyle} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
         <Bar dataKey="value" radius={[0, 4, 4, 0]}>
           {data.map((entry, i) => (
