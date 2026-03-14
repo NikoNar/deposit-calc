@@ -2,8 +2,9 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { DARK, LIGHT } from "../../lib/theme.js";
+import { usePathname } from "next/navigation";
+import { useTheme } from "../ThemeContext.jsx";
+import SharedHeader from "../SharedHeader.jsx";
 import {
   computeScenario,
   computePropertyHealthScore,
@@ -12,7 +13,6 @@ import {
 import WizardSteps from "./WizardSteps.jsx";
 import ResultsView from "./ResultsView.jsx";
 
-const THEME_STORAGE_KEY = "deposit-calc-theme";
 const INPUTS_STORAGE_KEY = "property-analyzer-last-inputs";
 const CURRENCY_SYMBOLS = { AMD: "֏", USD: "$", EUR: "€" };
 
@@ -37,23 +37,18 @@ const defaultFormState = () => ({
 });
 
 export default function PropertyAnalyzerApp({ lang: langProp }) {
-  const router = useRouter();
-  const lang = langProp || "hy";
+  const pathname = usePathname();
+  const lang = langProp ?? (pathname?.startsWith("/en") ? "en" : "hy");
+  const { T } = useTheme();
 
   const [mounted, setMounted] = useState(false);
-  const [themeMode, setThemeMode] = useState("system");
-  const [systemDark, setSystemDark] = useState(false);
   const [step, setStep] = useState(1);
   const [showResults, setShowResults] = useState(false);
   const [form, setForm] = useState(defaultFormState);
   const [currency, setCurrency] = useState("AMD");
+  const sym = CURRENCY_SYMBOLS[currency];
 
   useEffect(() => setMounted(true), []);
-  useEffect(() => {
-    if (!mounted || typeof window === "undefined") return;
-    const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    if (stored === "light" || stored === "dark" || stored === "system") setThemeMode(stored);
-  }, [mounted]);
   useEffect(() => {
     if (!mounted || typeof window === "undefined") return;
     try {
@@ -67,28 +62,6 @@ export default function PropertyAnalyzerApp({ lang: langProp }) {
       }
     } catch (_) {}
   }, [mounted]);
-  useEffect(() => {
-    if (!mounted || themeMode !== "system") return;
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    setSystemDark(mq.matches);
-    const fn = (e) => setSystemDark(e.matches);
-    mq.addEventListener("change", fn);
-    return () => mq.removeEventListener("change", fn);
-  }, [mounted, themeMode]);
-
-  const dark = themeMode === "system" ? systemDark : themeMode === "dark";
-  const T = dark ? DARK : LIGHT;
-  const sym = CURRENCY_SYMBOLS[currency];
-
-  const setTheme = (mode) => {
-    setThemeMode(mode);
-    if (typeof window !== "undefined") localStorage.setItem(THEME_STORAGE_KEY, mode);
-  };
-
-  const goToLang = (newLang) => {
-    if (newLang === "en") router.push("/en/property-analyzer");
-    else router.push("/property-analyzer");
-  };
 
   const updateForm = (updates) => setForm((prev) => ({ ...prev, ...updates }));
 
@@ -167,8 +140,6 @@ export default function PropertyAnalyzerApp({ lang: langProp }) {
 
   const handleEditInputs = () => setShowResults(false);
 
-  const calculatorHref = lang === "en" ? "/en" : "/";
-
   return (
     <div
       style={{
@@ -185,40 +156,12 @@ export default function PropertyAnalyzerApp({ lang: langProp }) {
         input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
       `}</style>
 
-      <header
-        style={{
-          background: T.surface,
-          borderBottom: `1px solid ${T.border}`,
-          position: "sticky",
-          top: 0,
-          zIndex: 100,
-          boxShadow: T.shadow,
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 800,
-            margin: "0 auto",
-            padding: "12px 20px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 12,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Link
-              href={calculatorHref}
-              style={{ fontSize: 14, color: T.accent, textDecoration: "none", fontWeight: 500 }}
-            >
-              ← {lang === "en" ? "Calculator" : "Հաշվիչ"}
-            </Link>
-            <span style={{ color: T.border }}>|</span>
-            <span style={{ fontSize: 16, fontWeight: 700, color: T.text }}>
-              {lang === "en" ? "Property Affordability & Rental Analyzer" : "Գույքի ձեռքբերելիություն և վարձակալության վերլուծիչ"}
-            </span>
-          </div>
+      <SharedHeader />
+      <div style={{ background: T.surfaceAlt, borderBottom: `1px solid ${T.border}`, padding: "10px 24px" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+          <span style={{ fontSize: 16, fontWeight: 700, color: T.text }}>
+            {lang === "en" ? "Property Affordability & Rental Analyzer" : "Գույքի ձեռքբերելիություն և վարձակալության վերլուծիչ"}
+          </span>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span style={{ fontSize: 11, fontWeight: 500, color: T.textMuted, marginRight: 2 }}>{lang === "en" ? "Currency" : "Արժույթ"}</span>
             {["AMD", "USD", "EUR"].map((c) => (
@@ -239,56 +182,9 @@ export default function PropertyAnalyzerApp({ lang: langProp }) {
                 {CURRENCY_SYMBOLS[c]} {c}
               </button>
             ))}
-            <select
-              value={themeMode}
-              onChange={(e) => setTheme(e.target.value)}
-              style={{
-                background: T.surfaceAlt,
-                border: `1px solid ${T.border}`,
-                borderRadius: 8,
-                padding: "6px 10px",
-                fontSize: 12,
-                color: T.text,
-                cursor: "pointer",
-              }}
-            >
-              <option value="system">{lang === "en" ? "System" : "Համակարգ"}</option>
-              <option value="light">{lang === "en" ? "Light" : "Բաց"}</option>
-              <option value="dark">{lang === "en" ? "Dark" : "Մութ"}</option>
-            </select>
-            <button
-              type="button"
-              onClick={() => goToLang("hy")}
-              style={{
-                padding: "6px 10px",
-                borderRadius: 8,
-                border: `1px solid ${lang === "hy" ? T.accent : T.border}`,
-                background: lang === "hy" ? T.accentBg : "transparent",
-                color: lang === "hy" ? T.accentText : T.textSub,
-                fontSize: 12,
-                cursor: "pointer",
-              }}
-            >
-              HY
-            </button>
-            <button
-              type="button"
-              onClick={() => goToLang("en")}
-              style={{
-                padding: "6px 10px",
-                borderRadius: 8,
-                border: `1px solid ${lang === "en" ? T.accent : T.border}`,
-                background: lang === "en" ? T.accentBg : "transparent",
-                color: lang === "en" ? T.accentText : T.textSub,
-                fontSize: 12,
-                cursor: "pointer",
-              }}
-            >
-              EN
-            </button>
           </div>
         </div>
-      </header>
+      </div>
 
       <main style={{ maxWidth: 800, margin: "0 auto", padding: 24 }}>
         {showResults ? (

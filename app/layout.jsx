@@ -1,16 +1,18 @@
 import "./globals.css";
 import VercelAnalytics from "./VercelAnalytics.jsx";
+import { GeistSans } from "geist/font/sans";
+import { ThemeProvider } from "./ThemeContext.jsx";
 
 export const metadata = {
-  title: "Compound Interest Calculator | Saving.am",
+  title: "Saving.am | Financial calculators for Armenia",
   description:
-    "Free compound interest calculator for Armenian bank deposits. Plan your savings growth with yearly rates and monthly contributions. | Խնայողությունների Բարդ Տոկոսադրույքի Հաշվիչ: Օգտվեք ավանդի և բարդ տոկոսադրույքի հաշվիչից Հայաստանում։ Պլանավորեք ձեր խնայողությունների աճը ըստ բանկի պայմանների։",
+    "Free financial tools for Armenia: compound interest calculator, property affordability analyzer, and financial health check. Plan savings with Armenian bank rates. | Անվճար ֆինանսական գործիքներ Հայաստանի համար: բարդ տոկոսի հաշվիչ, գույքի վերլուծիչ, ֆինանսական առողջության ստուգում:",
   keywords:
-    "compound interest calculator, savings calculator, Armenian bank deposit calculator, Armenia savings, deposit calculator Armenia, compound interest Armenia, bank interest calculator, monthly contributions calculator, savings growth calculator, Saving.am, Armenian banks, interest rate calculator, investment calculator Armenia, ավանդի հաշվիչ, խնայողությունների հաշվիչ, բարդ տոկոսադրույք, Հայաստան ավանդ",
+    "compound interest calculator, savings calculator, Armenian bank deposit calculator, Armenia savings, deposit calculator Armenia, Saving.am, Armenian banks, financial health Armenia, property calculator Armenia, ավանդի հաշվիչ, խնայողությունների հաշվիչ, բարդ տոկոսադրույք, Հայաստան ավանդ",
   openGraph: {
-    title: "Compound Interest Calculator | Saving.am",
+    title: "Saving.am | Financial calculators for Armenia",
     description:
-      "Free compound interest calculator for Armenian bank deposits. Plan your savings growth with yearly rates and monthly contributions.",
+      "Free financial tools for Armenia: compound interest calculator, property analyzer, and financial health check.",
   },
 };
 
@@ -115,7 +117,7 @@ const FAQ_SCHEMA = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={GeistSans.variable}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -123,13 +125,19 @@ export default function RootLayout({ children }) {
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_SCHEMA) }}
         />
       </head>
-      <body>
-        {children}
+      <body className={GeistSans.className}>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
         <VercelAnalytics />
       </body>
     </html>

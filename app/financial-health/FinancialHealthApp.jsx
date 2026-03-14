@@ -2,16 +2,16 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
-import { DARK, LIGHT } from "../../lib/theme.js";
+import { useTheme } from "../ThemeContext.jsx";
+import SharedHeader from "../SharedHeader.jsx";
 import { BENCHMARKS } from "../../lib/financialHealthBenchmarks.js";
 import { computeHealthScore, getActionPlan } from "../../lib/financialHealthScore.js";
 import { projectEmergencyFund } from "./EmergencyFundChart.jsx";
 
 const EmergencyFundChart = dynamic(() => import("./EmergencyFundChart.jsx"), { ssr: false });
 
-const THEME_STORAGE_KEY = "deposit-calc-theme";
 const LAST_RESULT_STORAGE_KEY = "financial-health-last-result";
 const LAST_INPUTS_STORAGE_KEY = "financial-health-last-inputs";
 
@@ -323,11 +323,9 @@ function getBandLabelKey(band) {
 
 export default function FinancialHealthApp({ lang: langProp }) {
   const pathname = usePathname();
-  const router = useRouter();
   const lang = langProp ?? (pathname?.startsWith("/en") ? "en" : "hy");
+  const { T } = useTheme();
 
-  const [themeMode, setThemeMode] = useState("system");
-  const [systemDark, setSystemDark] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -387,20 +385,6 @@ export default function FinancialHealthApp({ lang: langProp }) {
     } catch (_) {}
   };
 
-  useEffect(() => {
-    if (!mounted) return;
-    const stored = typeof window !== "undefined" ? localStorage.getItem(THEME_STORAGE_KEY) : null;
-    if (stored === "light" || stored === "dark" || stored === "system") setThemeMode(stored);
-  }, [mounted]);
-  useEffect(() => {
-    if (!mounted || themeMode !== "system") return;
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    setSystemDark(mq.matches);
-    const fn = (e) => setSystemDark(e.matches);
-    mq.addEventListener("change", fn);
-    return () => mq.removeEventListener("change", fn);
-  }, [mounted, themeMode]);
-
   const newLoanMonthlyPayment = useMemo(() => {
     const P = Number(newLoanAmount) || 0;
     const years = Number(newLoanTermYears) || 0;
@@ -433,19 +417,6 @@ export default function FinancialHealthApp({ lang: langProp }) {
     const loanPmt = (Number(monthlyLoan) || 0) + (userIntent === "debt_planning" ? newLoanMonthlyPayment : 0);
     return inc + raise - ess - opt - loanPmt;
   }, [income, essential, optional, monthlyLoan, userIntent, salaryIncrease, newLoanMonthlyPayment]);
-
-  const dark = themeMode === "system" ? systemDark : themeMode === "dark";
-  const T = dark ? DARK : LIGHT;
-
-  const goToLang = (newLang) => {
-    if (newLang === "en") router.push("/en/financial-health");
-    else router.push("/financial-health");
-  };
-
-  const setTheme = (mode) => {
-    setThemeMode(mode);
-    if (typeof window !== "undefined") localStorage.setItem(THEME_STORAGE_KEY, mode);
-  };
 
   const inputs = useMemo(
     () => ({
@@ -554,7 +525,7 @@ export default function FinancialHealthApp({ lang: langProp }) {
     }
   }
 
-  const calculatorHref = lang === "en" ? "/en" : "/";
+  const calculatorHref = lang === "en" ? "/en/compound-interest-savings-calculator" : "/compound-interest-savings-calculator";
   const sym = "֏";
 
   return (
@@ -573,95 +544,12 @@ export default function FinancialHealthApp({ lang: langProp }) {
         input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
       `}</style>
 
-      {/* Header */}
-      <header
-        style={{
-          background: T.surface,
-          borderBottom: `1px solid ${T.border}`,
-          position: "sticky",
-          top: 0,
-          zIndex: 100,
-          boxShadow: T.shadow,
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 800,
-            margin: "0 auto",
-            padding: "12px 20px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 12,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Link
-              href={calculatorHref}
-              style={{
-                fontSize: 14,
-                color: T.accent,
-                textDecoration: "none",
-                fontWeight: 500,
-              }}
-            >
-              ← {t(lang, "home")}
-            </Link>
-            <span style={{ color: T.border }}>|</span>
-            <span style={{ fontSize: 16, fontWeight: 700, color: T.text }}>{t(lang, "title")}</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <select
-              value={themeMode}
-              onChange={(e) => setTheme(e.target.value)}
-              style={{
-                background: T.surfaceAlt,
-                border: `1px solid ${T.border}`,
-                borderRadius: 8,
-                padding: "6px 10px",
-                fontSize: 12,
-                color: T.text,
-                cursor: "pointer",
-              }}
-            >
-              <option value="system">{t(lang, "theme_system")}</option>
-              <option value="light">{t(lang, "theme_light")}</option>
-              <option value="dark">{t(lang, "theme_dark")}</option>
-            </select>
-            <button
-              type="button"
-              onClick={() => goToLang("hy")}
-              style={{
-                padding: "6px 10px",
-                borderRadius: 8,
-                border: `1px solid ${lang === "hy" ? T.accent : T.border}`,
-                background: lang === "hy" ? T.accentBg : "transparent",
-                color: lang === "hy" ? T.accentText : T.textSub,
-                fontSize: 12,
-                cursor: "pointer",
-              }}
-            >
-              HY
-            </button>
-            <button
-              type="button"
-              onClick={() => goToLang("en")}
-              style={{
-                padding: "6px 10px",
-                borderRadius: 8,
-                border: `1px solid ${lang === "en" ? T.accent : T.border}`,
-                background: lang === "en" ? T.accentBg : "transparent",
-                color: lang === "en" ? T.accentText : T.textSub,
-                fontSize: 12,
-                cursor: "pointer",
-              }}
-            >
-              EN
-            </button>
-          </div>
+      <SharedHeader />
+      <div style={{ background: T.surfaceAlt, borderBottom: `1px solid ${T.border}`, padding: "10px 24px" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto" }}>
+          <span style={{ fontSize: 16, fontWeight: 700, color: T.text }}>{t(lang, "title")}</span>
         </div>
-      </header>
+      </div>
 
       <main style={{ maxWidth: 800, margin: "0 auto", padding: 24 }}>
         {!userIntent ? (

@@ -2,7 +2,9 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useTheme } from "./ThemeContext.jsx";
+import SharedHeader from "./SharedHeader.jsx";
 import dynamic from "next/dynamic";
 import * as XLSX from "xlsx";
 
@@ -587,87 +589,26 @@ async function downloadExcel(type, result, rate, years, principal, monthlyAdd, a
 // ══════════════════════════════════════════════════════════════════════════════
 // APP
 // ══════════════════════════════════════════════════════════════════════════════
-const THEME_STORAGE_KEY = "deposit-calc-theme";
-
 export default function ClientApp() {
   const pathname = usePathname();
-  const router = useRouter();
-  const lang = pathname === "/en" ? "en" : "hy";
+  const lang = pathname?.startsWith("/en") ? "en" : "hy";
+  const { T, dark } = useTheme();
 
-  const [themeMode, setThemeMode] = useState("system");
-  // Use false for SSR/first paint so server and client render the same <style> (avoids hydration mismatch)
-  const [systemDark, setSystemDark] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const mobileMenuRef = useRef(null);
-  const headerDropdownRef = useRef(null);
-  const [headerDropdownOpen, setHeaderDropdownOpen] = useState(null); // null | 'actions' | 'language' | 'theme'
-
-  const dark = themeMode === "system" ? systemDark : themeMode === "dark";
-  const T = dark ? DARK : LIGHT;
-
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportRef = useRef(null);
   useEffect(() => {
-    setMounted(true);
-  }, []);
-  useEffect(() => {
-    if (!mounted) return;
-    const stored = typeof window !== "undefined" ? localStorage.getItem(THEME_STORAGE_KEY) : null;
-    if (stored === "light" || stored === "dark" || stored === "system") setThemeMode(stored);
-  }, [mounted]);
+    if (!exportOpen) return;
+    const close = (e) => {
+      if (exportRef.current && !exportRef.current.contains(e.target)) setExportOpen(false);
+    };
+    const onKey = (e) => { if (e.key === "Escape") setExportOpen(false); };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", onKey); };
+  }, [exportOpen]);
   useEffect(() => {
     document.documentElement.lang = lang === "en" ? "en" : "hy";
   }, [lang]);
-  useEffect(() => {
-    if (!mounted || themeMode !== "system") return;
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    setSystemDark(mq.matches);
-    const fn = (e) => setSystemDark(e.matches);
-    mq.addEventListener("change", fn);
-    return () => mq.removeEventListener("change", fn);
-  }, [mounted, themeMode]);
-  const setTheme = (mode) => {
-    setThemeMode(mode);
-    if (typeof window !== "undefined") localStorage.setItem(THEME_STORAGE_KEY, mode);
-  };
-
-  const goToLang = (newLang) => {
-    if (newLang === "en") router.push("/en");
-    else router.push("/");
-  };
-
-  // Close mobile menu on outside click or Escape
-  useEffect(() => {
-    if (!mobileMenuOpen) return;
-    const close = (e) => {
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) setMobileMenuOpen(false);
-    };
-    const onKey = (e) => { if (e.key === "Escape") setMobileMenuOpen(false); };
-    document.addEventListener("mousedown", close);
-    document.addEventListener("touchstart", close, { passive: true });
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("touchstart", close);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [mobileMenuOpen]);
-
-  // Close header dropdown on outside click or Escape
-  useEffect(() => {
-    if (headerDropdownOpen == null) return;
-    const close = (e) => {
-      if (headerDropdownRef.current && !headerDropdownRef.current.contains(e.target)) setHeaderDropdownOpen(null);
-    };
-    const onKey = (e) => { if (e.key === "Escape") setHeaderDropdownOpen(null); };
-    document.addEventListener("mousedown", close);
-    document.addEventListener("touchstart", close, { passive: true });
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("touchstart", close);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [headerDropdownOpen]);
 
   const [activeTab, setActiveTab]         = useState("Calculator");
   const [currency, setCurrency]           = useState("AMD");
@@ -757,7 +698,7 @@ export default function ClientApp() {
   const tooltipStyle = { background: T.tooltip, border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 12, color: T.text, boxShadow: T.shadowMd };
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "100vh", color: T.text, transition: "background .2s, color .2s" }}>
+    <div style={{ fontFamily: "'Inter', sans-serif", width: "100%", minHeight: "100vh", background: T.bg, color: T.text, transition: "background .2s, color .2s" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -838,147 +779,29 @@ export default function ClientApp() {
       `}</style>
 
       {/* ── HEADER ── */}
-      <header style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, position: "sticky", top: 0, zIndex: 100, boxShadow: T.shadow }} className="no-print app-header">
-        <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, gap: 12 }} className="app-header-inner">
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, minWidth: 0 }}>
-            <div className="app-header-logo" style={{ width: 32, height: 32, borderRadius: 8, background: `linear-gradient(135deg, ${T.accent}, ${T.purple})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🏦</div>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: T.text, lineHeight: 1 }} className="app-header-brand-text">{t("header_title")}</div>
-              <div style={{ fontSize: 10, color: T.textMuted, marginTop: 2 }} className="app-header-subtitle">{t("header_subtitle")}</div>
-            </div>
-          </div>
-          {/* Desktop: dropdowns for Export, Language, Theme */}
-          <div ref={headerDropdownRef} style={{ display: "flex", alignItems: "center", gap: 6, position: "relative" }} className="app-header-actions app-header-actions-inline">
-            {/* Actions (Print & Excel) dropdown */}
-            <div style={{ position: "relative" }}>
-              <button
-                type="button"
-                aria-haspopup="true"
-                aria-expanded={headerDropdownOpen === "actions"}
-                onClick={() => setHeaderDropdownOpen(o => o === "actions" ? null : "actions")}
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 500, whiteSpace: "nowrap", border: `1px solid ${headerDropdownOpen === "actions" ? T.accent : T.border}`, background: headerDropdownOpen === "actions" ? T.accentBg : T.surfaceAlt, color: headerDropdownOpen === "actions" ? T.accentText : T.textSub, transition: "all .15s" }}
-                title={t("menu_export")}
-              >
-                <span style={{ fontSize: 14 }}>📤</span>
-                <span className="action-btn-label">{t("menu_export")}</span>
-                <span style={{ fontSize: 10, opacity: 0.9, transform: headerDropdownOpen === "actions" ? "rotate(180deg)" : "none", transition: "transform .2s" }}>▾</span>
-              </button>
-              {headerDropdownOpen === "actions" && (
-                <div role="menu" className="header-dropdown-panel" style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", minWidth: 180, padding: "6px 0", borderRadius: 10, background: T.surface, border: `1px solid ${T.border}`, boxShadow: T.shadowMd, zIndex: 200 }}>
-                  <button type="button" role="menuitem" className="header-dropdown-item" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: T.text, textAlign: "left" }} onClick={() => { window.print(); setHeaderDropdownOpen(null); }}>
-                    <span style={{ fontSize: 14 }}>🖨️</span> {t("btn_print")}
-                  </button>
-                  <button type="button" role="menuitem" className="header-dropdown-item" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: T.text, textAlign: "left" }} onClick={() => { downloadExcel("yearly", result, rate, years, principal, monthlyAdd, addMonths, currency, paymentsPerYear, lang); setHeaderDropdownOpen(null); }}>
-                    <span style={{ fontSize: 14 }}>📊</span> {t("btn_yearly_excel")}
-                  </button>
-                  <button type="button" role="menuitem" className="header-dropdown-item" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: T.text, textAlign: "left" }} onClick={() => { downloadExcel("monthly", result, rate, years, principal, monthlyAdd, addMonths, currency, paymentsPerYear, lang); setHeaderDropdownOpen(null); }}>
-                    <span style={{ fontSize: 14 }}>📋</span> {t("btn_monthly_excel")}
-                  </button>
-                </div>
-              )}
-            </div>
-            {/* Language dropdown */}
-            <div style={{ position: "relative" }}>
-              <button
-                type="button"
-                aria-haspopup="true"
-                aria-expanded={headerDropdownOpen === "language"}
-                onClick={() => setHeaderDropdownOpen(o => o === "language" ? null : "language")}
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 500, whiteSpace: "nowrap", border: `1px solid ${headerDropdownOpen === "language" ? T.accent : T.border}`, background: headerDropdownOpen === "language" ? T.accentBg : T.surfaceAlt, color: headerDropdownOpen === "language" ? T.accentText : T.textSub, transition: "all .15s" }}
-                title={t("faq_lang_label")}
-              >
-                <span style={{ fontSize: 14 }}>🌐</span>
-                <span className="action-btn-label">{lang === "en" ? "EN" : "HY"}</span>
-                <span style={{ fontSize: 10, opacity: 0.9, transform: headerDropdownOpen === "language" ? "rotate(180deg)" : "none", transition: "transform .2s" }}>▾</span>
-              </button>
-              {headerDropdownOpen === "language" && (
-                <div role="menu" className="header-dropdown-panel" style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", minWidth: 160, padding: "6px 0", borderRadius: 10, background: T.surface, border: `1px solid ${T.border}`, boxShadow: T.shadowMd, zIndex: 200 }}>
-                  <button type="button" role="menuitem" className="header-dropdown-item" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: lang === "en" ? T.accentBg : "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: T.text, textAlign: "left", fontWeight: lang === "en" ? 600 : 400 }} onClick={() => { goToLang("en"); setHeaderDropdownOpen(null); }}>
-                    {t("lang_english")}
-                  </button>
-                  <button type="button" role="menuitem" className="header-dropdown-item" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: lang === "hy" ? T.accentBg : "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: T.text, textAlign: "left", fontWeight: lang === "hy" ? 600 : 400 }} onClick={() => { goToLang("hy"); setHeaderDropdownOpen(null); }}>
-                    {t("lang_armenian")}
-                  </button>
-                </div>
-              )}
-            </div>
-            {/* Theme dropdown */}
-            <div style={{ position: "relative" }}>
-              <button
-                type="button"
-                aria-haspopup="true"
-                aria-expanded={headerDropdownOpen === "theme"}
-                onClick={() => setHeaderDropdownOpen(o => o === "theme" ? null : "theme")}
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 500, whiteSpace: "nowrap", border: `1px solid ${headerDropdownOpen === "theme" ? T.accent : T.border}`, background: headerDropdownOpen === "theme" ? T.accentBg : T.surfaceAlt, color: headerDropdownOpen === "theme" ? T.accentText : T.textSub, transition: "all .15s" }}
-                title={t("menu_theme")}
-              >
-                <span style={{ fontSize: 14 }}>{themeMode === "light" ? "☀️" : themeMode === "dark" ? "🌙" : "◐"}</span>
-                <span className="action-btn-label">{themeMode === "light" ? t("btn_light_mode") : themeMode === "dark" ? t("btn_dark_mode") : t("btn_system_mode")}</span>
-                <span style={{ fontSize: 10, opacity: 0.9, transform: headerDropdownOpen === "theme" ? "rotate(180deg)" : "none", transition: "transform .2s" }}>▾</span>
-              </button>
-              {headerDropdownOpen === "theme" && (
-                <div role="menu" className="header-dropdown-panel" style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", minWidth: 160, padding: "6px 0", borderRadius: 10, background: T.surface, border: `1px solid ${T.border}`, boxShadow: T.shadowMd, zIndex: 200 }}>
-                  <button type="button" role="menuitem" className="header-dropdown-item" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: themeMode === "light" ? T.accentBg : "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: T.text, textAlign: "left", fontWeight: themeMode === "light" ? 600 : 400 }} onClick={() => { setTheme("light"); setHeaderDropdownOpen(null); }}>
-                    <span style={{ fontSize: 14 }}>☀️</span> {t("btn_light_mode")}
-                  </button>
-                  <button type="button" role="menuitem" className="header-dropdown-item" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: themeMode === "dark" ? T.accentBg : "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: T.text, textAlign: "left", fontWeight: themeMode === "dark" ? 600 : 400 }} onClick={() => { setTheme("dark"); setHeaderDropdownOpen(null); }}>
-                    <span style={{ fontSize: 14 }}>🌙</span> {t("btn_dark_mode")}
-                  </button>
-                  <button type="button" role="menuitem" className="header-dropdown-item" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: themeMode === "system" ? T.accentBg : "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: T.text, textAlign: "left", fontWeight: themeMode === "system" ? 600 : 400 }} onClick={() => { setTheme("system"); setHeaderDropdownOpen(null); }}>
-                    <span style={{ fontSize: 14 }}>◐</span> {t("btn_system_mode")}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-          {/* Mobile: overflow (kebab) menu */}
-          <div ref={mobileMenuRef} className="app-header-actions-menu" style={{ position: "relative" }}>
+      <SharedHeader
+        rightContent={
+          <div ref={exportRef} style={{ position: "relative" }}>
             <button
               type="button"
-              aria-label={t("aria_open_menu")}
-              aria-expanded={mobileMenuOpen}
               aria-haspopup="true"
-              onClick={() => setMobileMenuOpen(o => !o)}
-              style={{ width: 44, height: 44, borderRadius: 8, background: T.surfaceAlt, border: `1px solid ${T.border}`, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: T.text }}
+              aria-expanded={exportOpen}
+              onClick={() => setExportOpen((o) => !o)}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 500, whiteSpace: "nowrap", border: `1px solid ${exportOpen ? T.accent : T.border}`, background: exportOpen ? T.accentBg : T.surfaceAlt, color: exportOpen ? T.accentText : T.textSub }}
+              title={t("menu_export")}
             >
-              ⋮
+              📤 {t("menu_export")} ▾
             </button>
-            {mobileMenuOpen && (
-              <div
-                role="menu"
-                className="mobile-menu-dropdown"
-                style={{
-                  position: "absolute", right: 0, top: "calc(100% + 6px)",
-                  minWidth: 200, padding: "6px 0", borderRadius: 10,
-                  background: T.surface, border: `1px solid ${T.border}`,
-                  boxShadow: T.shadowMd, zIndex: 200,
-                }}
-              >
-                <button type="button" role="menuitem" className="mobile-menu-item" style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "12px 16px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14, color: T.text, textAlign: "left" }} onClick={() => { window.print(); setMobileMenuOpen(false); }}>
-                  <span className="menu-item-icon">🖨️</span> {t("btn_print")}
-                </button>
-                <button type="button" role="menuitem" className="mobile-menu-item" style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "12px 16px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14, color: T.text, textAlign: "left" }} onClick={() => { downloadExcel("yearly", result, rate, years, principal, monthlyAdd, addMonths, currency, paymentsPerYear, lang); setMobileMenuOpen(false); }}>
-                  <span className="menu-item-icon">📊</span> {t("btn_yearly_excel")}
-                </button>
-                <button type="button" role="menuitem" className="mobile-menu-item" style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "12px 16px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14, color: T.text, textAlign: "left" }} onClick={() => { downloadExcel("monthly", result, rate, years, principal, monthlyAdd, addMonths, currency, paymentsPerYear, lang); setMobileMenuOpen(false); }}>
-                  <span className="menu-item-icon">📋</span> {t("btn_monthly_excel")}
-                </button>
-                <div style={{ borderTop: `1px solid ${T.borderSub}`, margin: "4px 0" }} />
-                <div style={{ padding: "8px 16px", fontSize: 12, fontWeight: 500, color: T.textMuted }}>{t("btn_system_mode")}</div>
-                <button type="button" role="menuitem" className="mobile-menu-item" style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "12px 16px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14, color: T.text, textAlign: "left" }} onClick={() => { setTheme("light"); setMobileMenuOpen(false); }}>
-                  <span className="menu-item-icon">☀️</span> {t("btn_light_mode")}
-                </button>
-                <button type="button" role="menuitem" className="mobile-menu-item" style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "12px 16px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14, color: T.text, textAlign: "left" }} onClick={() => { setTheme("dark"); setMobileMenuOpen(false); }}>
-                  <span className="menu-item-icon">🌙</span> {t("btn_dark_mode")}
-                </button>
-                <button type="button" role="menuitem" className="mobile-menu-item" style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "12px 16px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14, color: T.text, textAlign: "left" }} onClick={() => { setTheme("system"); setMobileMenuOpen(false); }}>
-                  <span className="menu-item-icon">◐</span> {t("btn_system_mode")}
-                </button>
+            {exportOpen && (
+              <div role="menu" style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", minWidth: 180, padding: "6px 0", borderRadius: 10, background: T.surface, border: `1px solid ${T.border}`, boxShadow: T.shadowMd, zIndex: 200 }}>
+                <button type="button" role="menuitem" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: T.text, textAlign: "left" }} onClick={() => { window.print(); setExportOpen(false); }}>🖨️ {t("btn_print")}</button>
+                <button type="button" role="menuitem" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: T.text, textAlign: "left" }} onClick={() => { downloadExcel("yearly", result, rate, years, principal, monthlyAdd, addMonths, currency, paymentsPerYear, lang); setExportOpen(false); }}>📊 {t("btn_yearly_excel")}</button>
+                <button type="button" role="menuitem" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, color: T.text, textAlign: "left" }} onClick={() => { downloadExcel("monthly", result, rate, years, principal, monthlyAdd, addMonths, currency, paymentsPerYear, lang); setExportOpen(false); }}>📋 {t("btn_monthly_excel")}</button>
               </div>
             )}
           </div>
-        </div>
-      </header>
+        }
+      />
 
       {/* ── MAIN CONTENT ── */}
       <main className="app-main" style={{ maxWidth: 1200, margin: "0 auto", paddingTop: 24, paddingBottom: 48 }}>
@@ -1014,7 +837,7 @@ export default function ClientApp() {
             {/* Tabs */}
             <div style={{ display: "flex", overflowX: "auto", flex: 1, minWidth: 0 }} className="app-bar-tabs">
               {TABS.map(tab => (
-                <button key={tab} onClick={() => setActiveTab(tab)} style={{
+                <button type="button" key={tab} onClick={() => setActiveTab(tab)} style={{
                   padding: "0 20px", height: 44, background: "none", border: "none", cursor: "pointer",
                   fontFamily: "inherit", fontSize: 13, fontWeight: 500, whiteSpace: "nowrap",
                   color: activeTab === tab ? T.accent : T.textSub,
@@ -1226,7 +1049,7 @@ export default function ClientApp() {
           <div style={{ ...card, padding: 0, overflow: "hidden" }}>
             <div style={{ display: "flex", alignItems: "center", borderBottom: `1px solid ${T.border}`, flexWrap: "wrap" }}>
               {["yearly","monthly"].map(v => (
-                <button key={v} onClick={() => setTableView(v)} style={{ padding: "12px 20px", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 500, color: tableView === v ? T.accent : T.textSub, borderBottom: `2px solid ${tableView === v ? T.accent : "transparent"}`, transition: "color .15s", textTransform: "capitalize" }}>
+                <button type="button" key={v} onClick={() => setTableView(v)} style={{ padding: "12px 20px", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 500, color: tableView === v ? T.accent : T.textSub, borderBottom: `2px solid ${tableView === v ? T.accent : "transparent"}`, transition: "color .15s", textTransform: "capitalize" }}>
                   {t("table_" + v)} {t("table_breakdown")}
                 </button>
               ))}
@@ -1483,6 +1306,8 @@ export default function ClientApp() {
       {/* ── FOOTER ── */}
       <footer className="app-footer" style={{ background: T.surface, borderTop: `1px solid ${T.border}`, textAlign: "center" }}>
         <p style={{ fontSize: 13, color: T.textMuted, marginBottom: 6 }}>
+          <Link href={lang === "en" ? "/en" : "/"} style={{ color: T.accent, textDecoration: "none", fontWeight: 500 }}>Saving.am</Link>
+          {" · "}
           <Link href={lang === "en" ? "/en/blog" : "/blog"} style={{ color: T.accent, textDecoration: "none", fontWeight: 500 }}>
             {t("blog_nav")}
           </Link>
@@ -1511,7 +1336,7 @@ export default function ClientApp() {
 function ActionBtn({ T, icon, label, onClick }) {
   const [h, setH] = useState(false);
   return (
-    <button className="action-btn" onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+    <button type="button" className="action-btn" onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 500, whiteSpace: "nowrap", border: `1px solid ${h ? T.accent : T.border}`, background: h ? T.accentBg : T.surfaceAlt, color: h ? T.accentText : T.textSub, transition: "all .15s" }}
       title={label}>
       <span style={{ fontSize: 14 }}>{icon}</span>
@@ -1534,7 +1359,7 @@ function SegBtn({ T, active, onClick, children, accent, title }) {
 function Pill({ T, active, onClick, children, small, accent }) {
   const isTeal = accent === "teal";
   return (
-    <button onClick={onClick} style={{
+    <button type="button" onClick={onClick} style={{
       padding: small ? "2px 8px" : "5px 12px", borderRadius: 20, cursor: "pointer", fontFamily: "inherit",
       fontSize: small ? 11 : 12, fontWeight: active ? 600 : 400, whiteSpace: "nowrap",
       border: `1px solid ${active ? (isTeal ? "#0d9488" : T.accent) : T.border}`,
