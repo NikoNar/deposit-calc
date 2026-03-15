@@ -12,6 +12,7 @@ const HEADER_COPY = {
     menu_education_news: "Education & News",
     tool_compound: "Compound Interest Calculator",
     tool_property: "Property Analyzer",
+    tool_mortgage: "Mortgage Calculator",
     tool_health: "Financial Health Check",
     lang_hy: "Հայերեն",
     lang_en: "English",
@@ -25,6 +26,7 @@ const HEADER_COPY = {
     menu_education_news: "Կրթություն և Խորհուրդներ",
     tool_compound: "Բարդ տոկոսի հաշվիչ",
     tool_property: "Գույքի վերլուծիչ",
+    tool_mortgage: "Հիպոթեկային հաշվիչ",
     tool_health: "Ֆինանսական առողջություն",
     lang_hy: "Հայերեն",
     lang_en: "English",
@@ -37,6 +39,7 @@ const HEADER_COPY = {
 const CALC_ITEMS = [
   { path: "compound-interest-savings-calculator", titleKey: "tool_compound", icon: "📊" },
   { path: "property-analyzer", titleKey: "tool_property", icon: "🏠" },
+  { path: "mortgage-calculator", titleKey: "tool_mortgage", icon: "🏦" },
   { path: "financial-health", titleKey: "tool_health", icon: "❤️" },
 ];
 

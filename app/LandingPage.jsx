@@ -24,6 +24,9 @@ const LANDING_COPY = {
     tool_property_title: "Property Analyzer",
     tool_property_desc: "See what property price you can afford, safe mortgage payment, and whether rental income can cover the loan. Income, expenses, savings, and loan terms.",
     tool_property_cta: "Open analyzer",
+    tool_mortgage_title: "Mortgage Calculator",
+    tool_mortgage_desc: "Full cost of ownership: P&I, tax, insurance, PMI (with auto-removal), HOA. Amortization schedule, extra payments, and scenario comparison.",
+    tool_mortgage_cta: "Open calculator",
     tool_health_title: "Financial Health Check",
     tool_health_desc: "Get a score and action plan based on income, expenses, savings, and debt. Emergency fund planner and benchmarks for Armenia.",
     tool_health_cta: "Check health",
@@ -54,6 +57,9 @@ const LANDING_COPY = {
     tool_property_title: "Գույքի վերլուծիչ",
     tool_property_desc: "Պարզեք, ինչ գնով գույք կարող եք ձեռք բերել, անվտանգ hypothec և արդյոք վարձակալության եկամուտը կծածկի վճարը: Եկամուտ, ծախսեր, խնայողություններ, վարկի պայմաններ:",
     tool_property_cta: "Բացել վերլուծիչ",
+    tool_mortgage_title: "Հիպոթեկային հաշվիչ",
+    tool_mortgage_desc: "Սեփականության ամբողջ արժեքը. P&I, հարկ, ապահովագրություն, PMI (ավտո-դադար), HOA: Ամորտիզացիա, լրացուցիչ մուծումներ, սցենարների համեմատություն:",
+    tool_mortgage_cta: "Բացել հաշվիչ",
     tool_health_title: "Ֆինանսական առողջության ստուգում",
     tool_health_desc: "Ստացեք գնահատական և գործողությունների պլան՝ եկամուտ, ծախսեր, խնայողություններ և պարտքերով: Արտակարգ միջոցների պլանավորիչ և Հայաստանի չափանիշներ:",
     tool_health_cta: "Ստուգել",
@@ -71,6 +77,7 @@ const LANDING_COPY = {
 const TOOLS = [
   { id: "compound", path: "compound-interest-savings-calculator", titleKey: "tool_compound_title", descKey: "tool_compound_desc", ctaKey: "tool_compound_cta", icon: "📊" },
   { id: "property", path: "property-analyzer", titleKey: "tool_property_title", descKey: "tool_property_desc", ctaKey: "tool_property_cta", icon: "🏠" },
+  { id: "mortgage", path: "mortgage-calculator", titleKey: "tool_mortgage_title", descKey: "tool_mortgage_desc", ctaKey: "tool_mortgage_cta", icon: "🏦" },
   { id: "health", path: "financial-health", titleKey: "tool_health_title", descKey: "tool_health_desc", ctaKey: "tool_health_cta", icon: "❤️" },
   { id: "blog", path: "blog", titleKey: "tool_blog_title", descKey: "tool_blog_desc", ctaKey: "tool_blog_cta", icon: "📰" },
 ];
