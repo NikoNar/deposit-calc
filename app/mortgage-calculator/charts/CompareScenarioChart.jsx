@@ -26,7 +26,7 @@ export default function CompareScenarioChart({ lineData, T, sym, t, tooltipStyle
         <LineChart data={lineData} margin={{ top: 8, right: 24, bottom: 4, left: 0 }}>
           <XAxis dataKey="name" tick={{ fontSize: 11, fill: T.textMuted }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 10, fill: T.textMuted }} tickFormatter={fmtShort} axisLine={false} tickLine={false} />
-          <Tooltip formatter={(v, name) => [fmt(v, sym), name === "balanceA" ? t("compare_scenario_a") : t("compare_scenario_b")]} contentStyle={tooltipStyle} />
+          <Tooltip formatter={(v, name) => [fmt(v, sym), name]} contentStyle={tooltipStyle} />
           <Legend wrapperStyle={{ fontSize: 12 }} />
           <Line type="monotone" dataKey="balanceA" name={t("compare_scenario_a")} stroke={T.accent} strokeWidth={2} dot={false} />
           <Line type="monotone" dataKey="balanceB" name={t("compare_scenario_b")} stroke={T.green} strokeWidth={2} dot={false} strokeDasharray="5 5" />

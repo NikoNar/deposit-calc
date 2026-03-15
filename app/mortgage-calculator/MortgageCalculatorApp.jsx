@@ -78,6 +78,10 @@ const TRANSLATIONS = {
     chart_compare_balance: "Balance comparison",
     compare_scenario_a: "Scenario A",
     compare_scenario_b: "Scenario B",
+    compare_winner_intro: "In the winning scenario you save {months} months ({years} years) and avoid paying {interest} in total interest.",
+    compare_monthly_pi_diff: "Monthly P&I difference: {diff}.",
+    compare_tie: "Both scenarios have the same total interest and payoff length.",
+    compare_winner_wins: "{scenario} wins.",
     btn_export_excel: "Export to Excel",
     btn_show_schedule: "Show full schedule",
     btn_hide_schedule: "Hide schedule",
@@ -148,6 +152,10 @@ const TRANSLATIONS = {
     chart_compare_balance: "Մնացորդի համեմատություն",
     compare_scenario_a: "Սցենար A",
     compare_scenario_b: "Սցենար B",
+    compare_winner_intro: "Հաղթող սցենարում դուք խնայում եք {months} ամիս ({years} տարի) և չեք վճարում {interest} ընդամենը տոկոս:",
+    compare_monthly_pi_diff: "Ամսական P&I տարբերություն՝ {diff}.",
+    compare_tie: "Երկու սցենարներն էլ ունեն նույն ընդամենը տոկոսը և մարմանի ժամկետը:",
+    compare_winner_wins: "{scenario} հաղթող:",
     btn_export_excel: "Բեռնել Excel",
     btn_show_schedule: "Ցույց տալ աղյուսակ",
     btn_hide_schedule: "Թաքցնել",
@@ -213,6 +221,10 @@ function NumIn({ value, onChange, min = 0, step = 1, T, style: styleProp }) {
       (valueNum !== null && parsed !== "" && Math.abs(valueNum - parsed) < 1e-15);
     if (!same) {
       setDisplayStr(value === "" || value == null ? "" : formatWithThousandSep(value, allowDecimals));
+    } else if (valueNum !== null && valueNum !== "" && !allowDecimals) {
+      // Integer inputs: always show thousand separators (e.g. 50000 → 50,000)
+      const formatted = formatWithThousandSep(valueNum, false);
+      if (displayStr !== formatted) setDisplayStr(formatted);
     }
   }, [value, allowDecimals]);
 
@@ -775,8 +787,38 @@ export default function MortgageCalculatorApp({ lang: langProp }) {
               </Section>
             </div>
 
-            {compareResult && (
+            {compareResult && (() => {
+                const a = compareResult.scenarioA.summary;
+                const b = compareResult.scenarioB.summary;
+                const interestA = a.totalInterest || 0;
+                const interestB = b.totalInterest || 0;
+                const monthsA = a.payoffMonth || 0;
+                const monthsB = b.payoffMonth || 0;
+                const interestSaved = Math.abs(interestA - interestB);
+                const monthsSaved = Math.abs(monthsA - monthsB);
+                const yearsSaved = monthsSaved / 12;
+                const yearsDisplay = yearsSaved % 1 === 0 ? String(Math.round(yearsSaved)) : yearsSaved.toFixed(1);
+                const monthlyPiDiff = Math.abs((a.monthlyPI || 0) - (b.monthlyPI || 0));
+                const tie = monthsSaved === 0 && interestSaved < 0.01;
+                const winnerB = interestB < interestA;
+                const winnerName = winnerB ? t("compare_scenario_b") : t("compare_scenario_a");
+                return (
               <>
+                <div style={{ background: T.greenBg, border: `1px solid ${T.green}`, borderRadius: 12, padding: "16px 20px", marginBottom: 24 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: T.text, marginBottom: 6 }}>
+                    {tie ? t("compare_tie") : t("compare_winner_wins").replace("{scenario}", winnerName)}
+                  </div>
+                  {!tie && (
+                    <p style={{ fontSize: 13, color: T.textSub, lineHeight: 1.6, margin: 0 }}>
+                      {t("compare_winner_intro")
+                        .replace("{months}", String(monthsSaved))
+                        .replace("{years}", yearsDisplay)
+                        .replace("{interest}", fmt(interestSaved, sym))}
+                      <br />
+                      {t("compare_monthly_pi_diff").replace("{diff}", fmt(monthlyPiDiff, sym))}
+                    </p>
+                  )}
+                </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
                   <div style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: 10, padding: 16 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: T.accent, marginBottom: 12 }}>{t("compare_scenario_a")}</div>
@@ -793,7 +835,8 @@ export default function MortgageCalculatorApp({ lang: langProp }) {
                 </div>
                 <CompareScenarioChart lineData={compareLineData} T={T} sym={sym} t={t} tooltipStyle={tooltipStyle} />
               </>
-            )}
+                );
+              })()}
           </>
         )}
 
