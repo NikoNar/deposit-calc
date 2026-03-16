@@ -57,6 +57,13 @@ const TRANSLATIONS = {
     label_recurring_extra: "Extra payment (monthly)",
     label_one_time_extra: "One-time lump sum",
     label_one_time_month: "Apply in month #",
+    extra_strategy_none: "No restriction",
+    extra_strategy_skip: "Skip first X years",
+    extra_strategy_penalty: "Pay extra with penalty (first X years)",
+    label_extra_first_years: "First X years",
+    help_extra_first_years: "Skip: no recurring extra in this period. Penalty: only (100 − penalty)% of extra goes to principal.",
+    label_extra_penalty_pct: "Penalty (% of extra)",
+    help_extra_penalty_pct: "In the first X years, this percentage of each extra payment does not go to principal.",
     label_compare_term_b: "Scenario B: Term",
     label_compare_extra_b: "Scenario B: Extra (monthly)",
     card_monthly_pi: "Monthly P&I",
@@ -131,6 +138,13 @@ const TRANSLATIONS = {
     label_recurring_extra: "Լրացուցիչ ամսական մուծում",
     label_one_time_extra: "Միանվագ գումար",
     label_one_time_month: "Կիրառել ամսում #",
+    extra_strategy_none: "Սահմանափակում 없음",
+    extra_strategy_skip: "Բաց թողնել առաջին X տարին",
+    extra_strategy_penalty: "Լրացուցիչ մուծում տուգանքով (առաջին X տարի)",
+    label_extra_first_years: "Առաջին X տարի",
+    help_extra_first_years: "Բաց թողնել. այդ ժամկետում պարբերական լրացուցիչ չկա: Տուգանք. լրացուցիչի միայն (100 − տուգանք)% է գնում հիմնական գումարին:",
+    label_extra_penalty_pct: "Տուգանք (% լրացուցիչից)",
+    help_extra_penalty_pct: "Առաջին X տարվա ընթացքում լրացուցիչ վճարի այս տոկոսը չի գնում հիմնական գումարին:",
     label_compare_term_b: "Սցենար B: Ժամկետ",
     label_compare_extra_b: "Սցենար B: Լրացուցիչ (ամսական)",
     card_monthly_pi: "Ամսական P&I",
@@ -320,6 +334,9 @@ function getScheduleParams(form, currency, recurringExtra = 0, oneTimeExtra = 0,
     recurringExtra,
     oneTimeExtra,
     oneTimeExtraMonth: Number(form.oneTimeExtraMonth) || 0,
+    extraStrategy: form.extraStrategy || "none",
+    extraFirstYears: Math.max(0, Number(form.extraFirstYears) || 0),
+    extraPenaltyPct: Math.max(0, Math.min(100, Number(form.extraPenaltyPct) || 0)),
     startYear: Number(form.startYear) || new Date().getFullYear(),
     startMonth: Number(form.startMonth) || new Date().getMonth() + 1,
     calculationType: form.calculationType || "annuity",
@@ -377,6 +394,9 @@ export default function MortgageCalculatorApp({ lang: langProp }) {
     recurringExtra: 0,
     oneTimeExtra: 0,
     oneTimeExtraMonth: 1,
+    extraStrategy: "none",
+    extraFirstYears: 0,
+    extraPenaltyPct: 0,
     compareTermUnit: "year",
     compareTermValue: 15,
     compareExtraB: 0,
@@ -406,7 +426,10 @@ export default function MortgageCalculatorApp({ lang: langProp }) {
     recurringExtra: Number(form.recurringExtra) || 0,
     oneTimeExtra: Number(form.oneTimeExtra) || 0,
     oneTimeExtraMonth: Number(form.oneTimeExtraMonth) || 1,
-  }), [form.recurringExtra, form.oneTimeExtra, form.oneTimeExtraMonth]);
+    extraStrategy: form.extraStrategy || "none",
+    extraFirstYears: Math.max(0, Number(form.extraFirstYears) || 0),
+    extraPenaltyPct: Math.max(0, Math.min(100, Number(form.extraPenaltyPct) || 0)),
+  }), [form.recurringExtra, form.oneTimeExtra, form.oneTimeExtraMonth, form.extraStrategy, form.extraFirstYears, form.extraPenaltyPct]);
 
   const extraComparison = useMemo(() => {
     if (baseParams.loanAmount <= 0) return null;
@@ -416,7 +439,7 @@ export default function MortgageCalculatorApp({ lang: langProp }) {
   }, [baseParams, extraParams, form.recurringExtra, form.oneTimeExtra]);
 
   const compareParamsA = useMemo(() => getScheduleParams(form, currency, 0, 0, 0), [form, currency]);
-  const compareParamsB = useMemo(() => getScheduleParams(form, currency, Number(form.compareExtraB) || 0, 0, 0, getCompareTermYears(form)), [form, currency, form.compareTermUnit, form.compareTermValue, form.compareExtraB]);
+  const compareParamsB = useMemo(() => getScheduleParams(form, currency, Number(form.compareExtraB) || 0, 0, 0, getCompareTermYears(form)), [form, currency, form.compareTermUnit, form.compareTermValue, form.compareExtraB, form.extraStrategy, form.extraFirstYears, form.extraPenaltyPct]);
   const compareResult = useMemo(() => {
     if (compareParamsA.loanAmount <= 0) return null;
     return compareScenarios(compareParamsA, compareParamsB);
@@ -725,6 +748,25 @@ export default function MortgageCalculatorApp({ lang: langProp }) {
                 <NumIn value={form.oneTimeExtra} onChange={(v) => updateForm({ oneTimeExtra: v })} min={0} T={T} />
                 <label style={{ display: "block", fontSize: 12, color: T.textSub, marginTop: 10, marginBottom: 6 }}>{t("label_one_time_month")}</label>
                 <NumIn value={form.oneTimeExtraMonth} onChange={(v) => updateForm({ oneTimeExtraMonth: v })} min={1} T={T} />
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 14, marginBottom: 8 }}>
+                  <SegBtn T={T} active={form.extraStrategy === "none"} onClick={() => updateForm({ extraStrategy: "none" })}>{t("extra_strategy_none")}</SegBtn>
+                  <SegBtn T={T} active={form.extraStrategy === "skip_first_years"} onClick={() => updateForm({ extraStrategy: "skip_first_years" })}>{t("extra_strategy_skip")}</SegBtn>
+                  <SegBtn T={T} active={form.extraStrategy === "penalty_first_years"} onClick={() => updateForm({ extraStrategy: "penalty_first_years" })}>{t("extra_strategy_penalty")}</SegBtn>
+                </div>
+                {(form.extraStrategy === "skip_first_years" || form.extraStrategy === "penalty_first_years") && (
+                  <>
+                    <label style={{ display: "block", fontSize: 12, color: T.textSub, marginBottom: 6 }}>{t("label_extra_first_years")}</label>
+                    <NumIn value={form.extraFirstYears} onChange={(v) => updateForm({ extraFirstYears: v })} min={0} T={T} />
+                    <HelperText T={T}>{t("help_extra_first_years")}</HelperText>
+                  </>
+                )}
+                {form.extraStrategy === "penalty_first_years" && (
+                  <>
+                    <label style={{ display: "block", fontSize: 12, color: T.textSub, marginTop: 10, marginBottom: 6 }}>{t("label_extra_penalty_pct")}</label>
+                    <NumIn value={form.extraPenaltyPct} onChange={(v) => updateForm({ extraPenaltyPct: v })} min={0} step={0.01} T={T} />
+                    <HelperText T={T}>{t("help_extra_penalty_pct")}</HelperText>
+                  </>
+                )}
               </Section>
             </div>
 
@@ -784,6 +826,25 @@ export default function MortgageCalculatorApp({ lang: langProp }) {
                 </div>
                 <label style={{ display: "block", fontSize: 12, color: T.textSub, marginTop: 10, marginBottom: 6 }}>{t("label_compare_extra_b")} ({sym})</label>
                 <NumIn value={form.compareExtraB} onChange={(v) => updateForm({ compareExtraB: v })} min={0} T={T} />
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 14, marginBottom: 8 }}>
+                  <SegBtn T={T} active={form.extraStrategy === "none"} onClick={() => updateForm({ extraStrategy: "none" })}>{t("extra_strategy_none")}</SegBtn>
+                  <SegBtn T={T} active={form.extraStrategy === "skip_first_years"} onClick={() => updateForm({ extraStrategy: "skip_first_years" })}>{t("extra_strategy_skip")}</SegBtn>
+                  <SegBtn T={T} active={form.extraStrategy === "penalty_first_years"} onClick={() => updateForm({ extraStrategy: "penalty_first_years" })}>{t("extra_strategy_penalty")}</SegBtn>
+                </div>
+                {(form.extraStrategy === "skip_first_years" || form.extraStrategy === "penalty_first_years") && (
+                  <>
+                    <label style={{ display: "block", fontSize: 12, color: T.textSub, marginBottom: 6 }}>{t("label_extra_first_years")}</label>
+                    <NumIn value={form.extraFirstYears} onChange={(v) => updateForm({ extraFirstYears: v })} min={0} T={T} />
+                    <HelperText T={T}>{t("help_extra_first_years")}</HelperText>
+                  </>
+                )}
+                {form.extraStrategy === "penalty_first_years" && (
+                  <>
+                    <label style={{ display: "block", fontSize: 12, color: T.textSub, marginTop: 10, marginBottom: 6 }}>{t("label_extra_penalty_pct")}</label>
+                    <NumIn value={form.extraPenaltyPct} onChange={(v) => updateForm({ extraPenaltyPct: v })} min={0} step={0.01} T={T} />
+                    <HelperText T={T}>{t("help_extra_penalty_pct")}</HelperText>
+                  </>
+                )}
               </Section>
             </div>
 
