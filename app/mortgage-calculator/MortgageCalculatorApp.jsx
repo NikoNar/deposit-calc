@@ -138,7 +138,7 @@ const TRANSLATIONS = {
     label_recurring_extra: "Լրացուցիչ ամսական մուծում",
     label_one_time_extra: "Միանվագ գումար",
     label_one_time_month: "Կիրառել ամսում #",
-    extra_strategy_none: "Սահմանափակում 없음",
+    extra_strategy_none: "Սահմանափակում չկա",
     extra_strategy_skip: "Բաց թողնել առաջին X տարին",
     extra_strategy_penalty: "Լրացուցիչ մուծում տուգանքով (առաջին X տարի)",
     label_extra_first_years: "Առաջին X տարի",

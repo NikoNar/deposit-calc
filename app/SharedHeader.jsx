@@ -281,9 +281,9 @@ export default function SharedHeader({ rightContent = null, className = "" }) {
             aria-label="Menu"
             aria-expanded={mobileMenuOpen}
             onClick={() => setMobileMenuOpen((o) => !o)}
-            style={{ display: "none", width: 44, height: 44, borderRadius: 8, background: T.surfaceAlt, border: `1px solid ${T.border}`, cursor: "pointer", fontSize: 18, alignItems: "center", justifyContent: "center", color: T.text }}
+            style={{ display: "none", width: 40, height: 40, borderRadius: 8, background: T.surfaceAlt, border: `1px solid ${T.border}`, cursor: "pointer", fontSize: 14, alignItems: "center", justifyContent: "center", color: T.text }}
           >
-            ⋮
+            ☰
           </button>
         </div>
       </div>
