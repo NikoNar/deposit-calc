@@ -694,25 +694,25 @@ export default function MortgageCalculatorApp({ lang: langProp }) {
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                     <thead>
                       <tr style={{ background: T.surfaceAlt }}>
-                        <th style={{ padding: "8px 10px", textAlign: "left", borderBottom: `1px solid ${T.border}` }}>#</th>
-                        <th style={{ padding: "8px 10px", textAlign: "left", borderBottom: `1px solid ${T.border}` }}>{t("year")}</th>
-                        <th style={{ padding: "8px 10px", textAlign: "right", borderBottom: `1px solid ${T.border}` }}>{t("principal")}</th>
-                        <th style={{ padding: "8px 10px", textAlign: "right", borderBottom: `1px solid ${T.border}` }}>{t("interest")}</th>
-                        <th style={{ padding: "8px 10px", textAlign: "right", borderBottom: `1px solid ${T.border}` }}>PMI</th>
-                        <th style={{ padding: "8px 10px", textAlign: "right", borderBottom: `1px solid ${T.border}` }}>{t("total_monthly")}</th>
-                        <th style={{ padding: "8px 10px", textAlign: "right", borderBottom: `1px solid ${T.border}` }}>{t("balance")}</th>
+                        <th style={{ padding: "8px 10px", textAlign: "left", borderBottom: `1px solid ${T.border}`, whiteSpace: "nowrap" }}>#</th>
+                        <th style={{ padding: "8px 10px", textAlign: "left", borderBottom: `1px solid ${T.border}`, whiteSpace: "nowrap" }}>{t("year")}</th>
+                        <th style={{ padding: "8px 10px", textAlign: "right", borderBottom: `1px solid ${T.border}`, whiteSpace: "nowrap" }}>{t("principal")}</th>
+                        <th style={{ padding: "8px 10px", textAlign: "right", borderBottom: `1px solid ${T.border}`, whiteSpace: "nowrap" }}>{t("interest")}</th>
+                        <th style={{ padding: "8px 10px", textAlign: "right", borderBottom: `1px solid ${T.border}`, whiteSpace: "nowrap" }}>PMI</th>
+                        <th style={{ padding: "8px 10px", textAlign: "right", borderBottom: `1px solid ${T.border}`, whiteSpace: "nowrap" }}>{t("total_monthly")}</th>
+                        <th style={{ padding: "8px 10px", textAlign: "right", borderBottom: `1px solid ${T.border}`, whiteSpace: "nowrap" }}>{t("balance")}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {displaySchedule.map((row) => (
                         <tr key={row.monthIndex} style={{ borderBottom: `1px solid ${T.borderSub}` }}>
-                          <td style={{ padding: "8px 10px" }}>{row.monthIndex}</td>
-                          <td style={{ padding: "8px 10px" }}>{row.year}-{String(row.month).padStart(2, "0")}</td>
-                          <td style={{ padding: "8px 10px", textAlign: "right" }} suppressHydrationWarning>{fmt(row.principal, sym)}</td>
-                          <td style={{ padding: "8px 10px", textAlign: "right" }} suppressHydrationWarning>{fmt(row.interest, sym)}</td>
-                          <td style={{ padding: "8px 10px", textAlign: "right" }} suppressHydrationWarning>{fmt(row.pmi, sym)}</td>
-                          <td style={{ padding: "8px 10px", textAlign: "right" }} suppressHydrationWarning>{fmt(row.totalMonthly, sym)}</td>
-                          <td style={{ padding: "8px 10px", textAlign: "right" }} suppressHydrationWarning>{fmt(row.balanceEnd, sym)}</td>
+                          <td style={{ padding: "8px 10px", whiteSpace: "nowrap" }}>{row.monthIndex}</td>
+                          <td style={{ padding: "8px 10px", whiteSpace: "nowrap" }}>{row.year}-{String(row.month).padStart(2, "0")}</td>
+                          <td style={{ padding: "8px 10px", textAlign: "right", whiteSpace: "nowrap" }} suppressHydrationWarning>{fmt(row.principal, sym)}</td>
+                          <td style={{ padding: "8px 10px", textAlign: "right", whiteSpace: "nowrap" }} suppressHydrationWarning>{fmt(row.interest, sym)}</td>
+                          <td style={{ padding: "8px 10px", textAlign: "right", whiteSpace: "nowrap" }} suppressHydrationWarning>{fmt(row.pmi, sym)}</td>
+                          <td style={{ padding: "8px 10px", textAlign: "right", whiteSpace: "nowrap" }} suppressHydrationWarning>{fmt(row.totalMonthly, sym)}</td>
+                          <td style={{ padding: "8px 10px", textAlign: "right", whiteSpace: "nowrap" }} suppressHydrationWarning>{fmt(row.balanceEnd, sym)}</td>
                         </tr>
                       ))}
                     </tbody>
