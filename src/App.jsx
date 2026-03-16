@@ -669,7 +669,7 @@ export default function App() {
 
   // ── Derived theme-aware style helpers ──────────────────────────────────────
   const card   = { background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px" };
-  const input  = { width: "100%", background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: 8, color: T.text, padding: "8px 12px", fontSize: 14, fontFamily: "inherit", outline: "none", transition: "border-color .15s" };
+  const input  = { width: "100%", background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: 8, color: T.text, padding: "8px 12px", fontSize: 16, fontFamily: "inherit", outline: "none", transition: "border-color .15s" };
   const select = { ...input, cursor: "pointer" };
   const label  = { fontSize: 12, fontWeight: 500, color: T.textSub, marginBottom: 6, display: "block" };
 

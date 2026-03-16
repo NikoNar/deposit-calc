@@ -266,7 +266,7 @@ function NumIn({ value, onChange, min = 0, step = 1, T, style: styleProp }) {
         border: `1px solid ${T.border}`,
         background: T.bg,
         color: T.text,
-        fontSize: 14,
+        fontSize: 16,
         ...styleProp,
       }}
     />
@@ -500,6 +500,15 @@ export default function MortgageCalculatorApp({ lang: langProp }) {
         input:focus, select:focus { border-color: ${T.accent} !important; outline: none; }
         input[type=number] { -moz-appearance: textfield; }
         input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+        /* Currency switcher placement */
+        .mc-currency-inline { display: flex; }
+        .mc-currency-mobile { display: none; }
+
+        @media (max-width: 640px) {
+          .mc-currency-inline { display: none !important; }
+          .mc-currency-mobile { display: flex !important; }
+        }
       `}</style>
 
       <SharedHeader
@@ -533,7 +542,7 @@ export default function MortgageCalculatorApp({ lang: langProp }) {
           </div>
         </header>
 
-        <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, position: "sticky", top: 56, zIndex: 90, boxShadow: T.shadow, marginBottom: 20 }}>
+        <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, position: "sticky", top: 56, zIndex: 90, boxShadow: T.shadow, marginBottom: 0 }}>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "stretch", minWidth: 0 }}>
             <div style={{ display: "flex", overflowX: "auto", flex: 1, minWidth: 0 }}>
               {TABS.map((tab) => (
@@ -559,13 +568,21 @@ export default function MortgageCalculatorApp({ lang: langProp }) {
                 </button>
               ))}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderLeft: `1px solid ${T.border}` }}>
+            <div className="mc-currency-inline" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderLeft: `1px solid ${T.border}` }}>
               <span style={{ fontSize: 11, fontWeight: 500, color: T.textMuted, marginRight: 4 }}>{t("bar_currency")}</span>
               {["AMD", "USD", "EUR"].map((c) => (
                 <SegBtn key={c} T={T} active={currency === c} onClick={() => setCurrency(c)}>{CURRENCY_SYMBOLS[c]} {c}</SegBtn>
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Mobile currency bar under tabs */}
+        <div className="mc-currency-mobile" style={{ alignItems: "center", gap: 6, padding: "10px 0 16px 0" }}>
+          <span style={{ fontSize: 11, fontWeight: 500, color: T.textMuted, marginRight: 4 }}>{t("bar_currency")}</span>
+          {["AMD", "USD", "EUR"].map((c) => (
+            <SegBtn key={c} T={T} active={currency === c} onClick={() => setCurrency(c)}>{CURRENCY_SYMBOLS[c]} {c}</SegBtn>
+          ))}
         </div>
 
         {/* ── Calculator tab ── */}
