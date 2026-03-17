@@ -5,6 +5,7 @@ export const CATEGORIES = {
   "how-banks-work": { en: "How Banks Work", hy: "Ինչպես են աշխատում բանկերը" },
   "products-terms": { en: "Products & Terms", hy: "Ապրանքներ և Պայմաններ" },
   education: { en: "Education", hy: "Կրթություն" },
+  "tools-mortgage": { en: "Tools & Mortgage", hy: "Գործիքներ և Հիպոթեկ" },
 };
 
 export const CATEGORY_IDS = Object.keys(CATEGORIES);

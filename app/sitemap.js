@@ -2,6 +2,18 @@ import { getArticles } from "../lib/blog.js";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://saving.am";
 
+/** Only include entries whose url is under BASE_URL (avoids "URL not allowed" in Search Console). */
+function underBaseUrl(entry) {
+  const url = typeof entry === "string" ? entry : entry?.url;
+  if (!url) return false;
+  try {
+    const base = new URL(BASE_URL).origin;
+    return new URL(url).origin === base;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Next.js metadata file: generates /sitemap.xml
  * @see https://nextjs.org/docs/app/api-reference/file-conventions/metadata/sitemap
@@ -39,5 +51,6 @@ export default function sitemap() {
     priority: 0.8,
   }));
 
-  return [...staticPages, ...blogHy, ...blogEn];
+  const all = [...staticPages, ...blogHy, ...blogEn];
+  return all.filter(underBaseUrl);
 }

@@ -36,7 +36,7 @@ function formatDate(iso, lang) {
     : d.toLocaleDateString("hy-AM", { day: "numeric", month: "long", year: "numeric" });
 }
 
-function ProseBlock({ block, T }) {
+function ProseBlock({ block, T, lang }) {
   if (block.type === "h2") {
     return (
       <h2
@@ -88,6 +88,10 @@ function ProseBlock({ block, T }) {
     );
   }
   if (block.type === "callout") {
+    const toolHref = block.hrefPath
+      ? (lang === "en" ? `/en/${block.hrefPath}` : `/${block.hrefPath}`)
+      : null;
+    const toolLabel = block.hrefPath && (lang === "en" ? block.linkLabelEn : block.linkLabelHy);
     return (
       <div
         style={{
@@ -100,6 +104,16 @@ function ProseBlock({ block, T }) {
       >
         <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 6 }}>{block.title}</div>
         <div style={{ fontSize: 14, color: T.textSub, lineHeight: 1.6 }}>{block.text}</div>
+        {toolHref && toolLabel && (
+          <div style={{ marginTop: 12 }}>
+            <Link
+              href={toolHref}
+              style={{ fontSize: 14, fontWeight: 600, color: T.accent, textDecoration: "none" }}
+            >
+              {toolLabel}
+            </Link>
+          </div>
+        )}
       </div>
     );
   }
@@ -185,7 +199,7 @@ export default function ArticleContent({ article, relatedArticles }) {
         style={{ maxWidth: 720, lineHeight: 1.7 }}
       >
         {article.body?.map((block, i) => (
-          <ProseBlock key={i} block={block} T={T} />
+          <ProseBlock key={i} block={block} T={T} lang={lang} />
         ))}
       </article>
 
