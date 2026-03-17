@@ -15,9 +15,9 @@ const MORTGAGE_FAQ_SCHEMA = {
 };
 
 export const metadata = {
-  title: "Հիպոթեկային հաշվիչ | Saving.am",
+  title: "Հիփոթեկային հաշվիչ | Saving.am",
   description:
-    "Անվճար հիպոթեկային հաշվիչ. ամսական վճար, ամորտիզացիա, PMI, լրացուցիչ մուծումներ, սցենարների համեմատություն:",
+    "Անվճար հիփոթեկային հաշվիչ. ամսական վճար, ամորտիզացիա, PMI, լրացուցիչ մուծումներ, սցենարների համեմատություն:",
 };
 
 export default function MortgageCalculatorPage() {
